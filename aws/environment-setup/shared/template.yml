@@ -1,0 +1,178 @@
+# run using: aws cloudformation create-stack --stack-name shared-account-setup --template-body file://template.yml --capabilities CAPABILITY_NAMED_IAM
+
+AWSTemplateFormatVersion: "2010-09-09"
+
+Resources: 
+
+  DevApiUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: DevApiUser
+      Groups:
+        - !Ref DevApiGroup
+
+  DevApiGroup: 
+    Type: "AWS::IAM::Group"
+    Properties: 
+      ManagedPolicyArns: 
+        - !Ref DevApiPolicy
+
+  DevApiPolicy: 
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Action: 
+              - "apigateway:*"
+              - "cloudwatch:*"
+              - "events:*"
+              - "kinesis:*"
+              - "kms:*"
+              - "lambda:*"
+              - "s3:*"
+              - "athena:*"
+              - "cloudformation:*"
+              - "dax:*"
+              - "dynamodb:*"
+              - "iam:*"
+              - "logs:*"
+              - "ses:*"
+              - "sns:*"
+              - "sqs:*"
+              - "ssm:*"
+            Resource: "*"
+            Condition: 
+              StringEquals: 
+                "aws:RequestedRegion":
+                  - eu-west-1
+                  - eu-west-2
+          - 
+            Effect: "Allow"
+            # the following four services are special cases which use a single 'global' (i.e. us-based) endpoint
+            Action: 
+              - "cloudfront:*"
+              - "iam:*"
+              - "route53:*"
+              - "support:*"
+            Resource: "*"
+            Condition: 
+              StringEquals: 
+                "aws:RequestedRegion":
+                  - us-east-1
+
+  CloudFormationServiceRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - cloudformation.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns: 
+        - !Ref DevApiPolicy
+
+  CloudFormationInvokerUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: CloudFormationInvokerUser
+      Groups:
+        - !Ref CloudFormationInvokerGroup
+
+  CloudFormationInvokerGroup: 
+    Type: "AWS::IAM::Group"
+    Properties: 
+      ManagedPolicyArns: 
+        - !Ref CloudFormationInvokerPolicy
+
+  CloudFormationInvokerPolicy: 
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            # can push artifacts to S3 (that could be referenced in the cloudformation stack)
+            Effect: "Allow"
+            Action: 
+              - "s3:PutObject"
+              - "s3:GetObject"
+              - "s3:PutObjectTagging"
+              - "s3:GetObjectVersion"
+              - "s3:ListMultipartUploadParts"
+              - "s3:AbortMultipartUpload"
+            Resource: !Sub
+              - "${Bucket}/*"
+              - { Bucket: !GetAtt CfStagingBucket.Arn }
+            Condition: 
+              StringEquals: 
+                "aws:RequestedRegion":
+                  - eu-west-1
+                  - eu-west-2
+          - 
+            # can pass the service role to cloudformation
+            Effect: "Allow"
+            Action: 
+              - "iam:PassRole"
+            Resource: !GetAtt CloudFormationServiceRole.Arn
+            Condition: 
+              StringEquals: 
+                "aws:RequestedRegion":
+                  - eu-west-1
+                  - eu-west-2
+          - 
+            # can invoke cloudformation itself
+            Effect: "Allow"
+            Action: 
+              - "cloudformation:*"
+            Resource: "*"
+            Condition: 
+              StringEquals: 
+                "aws:RequestedRegion":
+                  - eu-west-1
+                  - eu-west-2
+          - 
+            #... except for some things you probably won't want to do through the api (and could be dangerous)
+            Effect: "Deny"
+            Action: 
+              - "cloudformation:DeleteChangeSet"
+              - "cloudformation:DeleteStack"
+              - "cloudformation:DeleteStackInstances"
+              - "cloudformation:DeleteStackSet"
+              - "cloudformation:SetStackPolicy"
+            Resource: "*"
+
+  CfStagingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "cloudformation-code-deploy-staging-${AWS::AccountId}"
+      PublicAccessBlockConfiguration: 
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration: 
+        Status: Enabled
+      LifecycleConfiguration: 
+        Rules: 
+          - Id: CleanUp
+            AbortIncompleteMultipartUpload: 
+              DaysAfterInitiation: 2
+            NoncurrentVersionExpirationInDays: 1
+            Status: Enabled
+            #"Clean up expired object delete markers" doesn't seem to be in cloudformation yet?
+
+# also want to turn on 'block public access' in S3 at the account level, but this doesn't seem to be in cf yet
+# also deactivate unused STS regions in IAM / account settings
+
+Outputs:
+  GoHere: 
+    Value: !Sub "Now create api tokens for ${CloudFormationInvokerUser}: https://console.aws.amazon.com/iam/home#/users/${CloudFormationInvokerUser}?section=security_credentials"
+  CfServiceRole: 
+    Value: !GetAtt CloudFormationServiceRole.Arn
