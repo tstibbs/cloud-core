@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+
+  ChildAccounts:
+    Type: CommaDelimitedList
+
+Resources: 
+
+  AllAccountAdminUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: AllAccountAdminUser
+      Groups:
+        - !Ref AllAccountAdminGroup
+
+  AllAccountAdminGroup: 
+    Type: "AWS::IAM::Group"
+    Properties: 
+      ManagedPolicyArns: 
+        - !Ref AllAccountAdminPolicy
+
+  AllAccountAdminPolicy: 
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            # admin permissions on 'this' account (i.e. the parent account)
+            Effect: "Allow"
+            Action: 
+              - "*"
+            Resource: "*"
+          - 
+            # admin permissions on each child account
+            Effect: "Allow"
+            Action: 
+              - "sts:AssumeRole"
+            Resource: !Split [ ",", !Join [ "", ["arn:aws:iam::", !Join [ ":role/OrganizationAccountAccessRole,arn:aws:iam::", !Ref ChildAccounts ], ":role/OrganizationAccountAccessRole"]]]
+
+Outputs:
+  GoHere: 
+    Value: !Sub "Now create a password for ${AllAccountAdminUser}: https://console.aws.amazon.com/iam/home#/users/${AllAccountAdminUser}?section=security_credentials"
