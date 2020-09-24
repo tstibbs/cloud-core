@@ -15,9 +15,54 @@ Resources:
     Type: "AWS::IAM::Group"
     Properties: 
       ManagedPolicyArns: 
-        - !Ref DevApiPolicy
+        - !Ref DevApiLimitedPolicy
+        - !Ref DevApiIamPolicy
 
-  DevApiPolicy: 
+  DevApiServiceRole: 
+    # to be used by real users, not bots (e.g. github actions)
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - cloudformation.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns: 
+        - !Ref DevApiLimitedPolicy
+        - !Ref DevApiIamPolicy
+
+  CloudFormationServiceRole: 
+    # to be used by bots (e.g. github actions) so it's important that this policy does not have IAM permissions
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - cloudformation.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns: 
+        - !Ref DevApiLimitedPolicy
+
+  DevApiIamPolicy: 
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+            Effect: "Allow"
+            Action: 
+              - "iam:*"
+            Resource: "*"
+
+  DevApiLimitedPolicy: 
     Type: "AWS::IAM::ManagedPolicy"
     Properties: 
       PolicyDocument: 
@@ -27,18 +72,17 @@ Resources:
             Effect: "Allow"
             Action: 
               - "apigateway:*"
+              - "athena:*"
+              - "cloudformation:*"
               - "cloudwatch:*"
+              - "dax:*"
+              - "dynamodb:*"
               - "events:*"
               - "kinesis:*"
               - "kms:*"
               - "lambda:*"
-              - "s3:*"
-              - "athena:*"
-              - "cloudformation:*"
-              - "dax:*"
-              - "dynamodb:*"
-              - "iam:*"
               - "logs:*"
+              - "s3:*"
               - "ses:*"
               - "sns:*"
               - "sqs:*"
@@ -54,16 +98,37 @@ Resources:
             # the following four services are special cases which use a single 'global' (i.e. us-based) endpoint
             Action: 
               - "cloudfront:*"
-              - "iam:*"
               - "route53:*"
               - "support:*"
+              # only iam read access here
+              - "iam:GetGroup"
+              - "iam:GetGroupPolicy"
+              - "iam:GetPolicy"
+              - "iam:GetPolicyVersion"
+              - "iam:GetRole"
+              - "iam:GetRolePolicy"
+              - "iam:GetUser"
+              - "iam:GetUserPolicy"
+              - "iam:ListAttachedGroupPolicies"
+              - "iam:ListAttachedRolePolicies"
+              - "iam:ListAttachedUserPolicies"
+              - "iam:ListEntitiesForPolicy"
+              - "iam:ListGroupPolicies"
+              - "iam:ListGroups"
+              - "iam:ListGroupsForUser"
+              - "iam:ListPolicies"
+              - "iam:ListPoliciesGrantingServiceAccess"
+              - "iam:ListPolicyVersions"
+              - "iam:ListRolePolicies"
+              - "iam:ListRoleTags"
+              - "iam:ListRoles"
+              - "iam:ListUserPolicies"
+              - "iam:ListUserTags"
+              - "iam:ListUsers"
             Resource: "*"
-            Condition: 
-              StringEquals: 
-                "aws:RequestedRegion":
-                  - us-east-1
 
   CloudFormationServiceRole: 
+    # it's important that this policy does not have write permissions to IAM
     Type: "AWS::IAM::Role"
     Properties: 
       AssumeRolePolicyDocument:
@@ -76,7 +141,7 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       ManagedPolicyArns: 
-        - !Ref DevApiPolicy
+        - !Ref DevApiLimitedPolicy
 
   CloudFormationInvokerUser:
     Type: AWS::IAM::User
@@ -127,10 +192,73 @@ Resources:
                   - eu-west-1
                   - eu-west-2
           - 
-            # can invoke cloudformation itself
+            # can invoke cloudformation itself - WRITE actions
             Effect: "Allow"
             Action: 
-              - "cloudformation:*"
+              - "cloudformation:ContinueUpdateRollback"
+              - "cloudformation:CreateChangeSet"
+              - "cloudformation:CreateStack"
+              - "cloudformation:CreateStackSet"
+              - "cloudformation:UpdateStack"
+              - "cloudformation:UpdateStackSet"
+            Resource: "*"
+            Condition: 
+              StringEquals: 
+                "aws:RequestedRegion":
+                  - eu-west-1
+                  - eu-west-2
+                "cloudformation:RoleArn":
+                  # prevent the user using any other role for running cloudformation - IAM permissions are denied elsewhere to prevent changing this policy
+                  - !GetAtt CloudFormationServiceRole.Arn 
+          - 
+            # can invoke cloudformation itself - READ(ish) actions
+            Effect: "Allow"
+            Action: 
+              - "cloudformation:CancelUpdateStack"
+              - "cloudformation:CreateStackInstances"
+              - "cloudformation:DeregisterType"
+              - "cloudformation:DescribeAccountLimits"
+              - "cloudformation:DescribeChangeSet"
+              - "cloudformation:DescribeStackDriftDetectionStatus"
+              - "cloudformation:DescribeStackEvents"
+              - "cloudformation:DescribeStackInstance"
+              - "cloudformation:DescribeStackResource"
+              - "cloudformation:DescribeStackResourceDrifts"
+              - "cloudformation:DescribeStackResources"
+              - "cloudformation:DescribeStackSet"
+              - "cloudformation:DescribeStackSetOperation"
+              - "cloudformation:DescribeStacks"
+              - "cloudformation:DescribeType"
+              - "cloudformation:DescribeTypeRegistration"
+              - "cloudformation:DetectStackDrift"
+              - "cloudformation:DetectStackResourceDrift"
+              - "cloudformation:DetectStackSetDrift"
+              - "cloudformation:EstimateTemplateCost"
+              - "cloudformation:ExecuteChangeSet"
+              - "cloudformation:GetStackPolicy"
+              - "cloudformation:GetTemplate"
+              - "cloudformation:GetTemplateSummary"
+              - "cloudformation:ListChangeSets"
+              - "cloudformation:ListExports"
+              - "cloudformation:ListImports"
+              - "cloudformation:ListStackInstances"
+              - "cloudformation:ListStackResources"
+              - "cloudformation:ListStackSetOperationResults"
+              - "cloudformation:ListStackSetOperations"
+              - "cloudformation:ListStackSets"
+              - "cloudformation:ListStacks"
+              - "cloudformation:ListTypeRegistrations"
+              - "cloudformation:ListTypeVersions"
+              - "cloudformation:ListTypes"
+              - "cloudformation:RegisterType"
+              - "cloudformation:SetTypeDefaultVersion"
+              - "cloudformation:SignalResource"
+              - "cloudformation:StopStackSetOperation"
+              - "cloudformation:TagResource"
+              - "cloudformation:UntagResource"
+              - "cloudformation:UpdateStackInstances"
+              - "cloudformation:UpdateTerminationProtection"
+              - "cloudformation:ValidateTemplate"
             Resource: "*"
             Condition: 
               StringEquals: 
@@ -138,7 +266,7 @@ Resources:
                   - eu-west-1
                   - eu-west-2
           - 
-            #... except for some things you probably won't want to do through the api (and could be dangerous)
+            #... except for some things you probably won't want to do through the api (and could be dangerous) or allow a remote user to do - note these shouldn't be declared above but are explicitly denied for safety
             Effect: "Deny"
             Action: 
               - "cloudformation:DeleteChangeSet"
@@ -166,9 +294,9 @@ Resources:
               DaysAfterInitiation: 2
             NoncurrentVersionExpirationInDays: 1
             Status: Enabled
-            #"Clean up expired object delete markers" doesn't seem to be in cloudformation yet?
+            #also "Clean up expired object delete markers" not in cf yet - https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/132
 
-# also want to turn on 'block public access' in S3 at the account level, but this doesn't seem to be in cf yet
+# also want to turn on 'block public access' in S3 at the account level, but not in cf yet - https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/168
 # also deactivate unused STS regions in IAM / account settings
 
 Outputs:
