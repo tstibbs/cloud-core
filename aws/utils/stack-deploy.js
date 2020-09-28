@@ -1,14 +1,9 @@
 import {strictEqual} from 'assert'
-import util from 'util'
 import fs from 'fs'
 import AWS from 'aws-sdk'
-import dotenv from 'dotenv'
 
-import {exec} from './utils.js'
+import {exec, readFile} from './utils.js'
 
-dotenv.config()
-
-AWS.config.update({region: 'eu-west-2'})
 const cloudformation = new AWS.CloudFormation({apiVersion: '2010-05-15'})
 const s3 = new AWS.S3({apiVersion: '2006-03-01'})
 const sts = new AWS.STS({apiVersion: '2011-06-15'})
@@ -58,7 +53,7 @@ async function deploy(stackName, templatePath, capabilities, cfServiceRole, arti
 		throw new Error(`Must specify cfServiceRole as full arn of role cloudformation should run as.`)
 	}
 
-	const templateBody = await util.promisify(fs.readFile)(templatePath, {encoding: 'utf-8'})
+	const templateBody = await readFile(templatePath, {encoding: 'utf-8'})
 	const revision = await getRevision()
 
 	const baseParams = {
@@ -193,13 +188,4 @@ async function deploy(stackName, templatePath, capabilities, cfServiceRole, arti
 	console.log('success')
 }
 
-function loadEnvs(envs) {
-	let missing = Object.keys(envs).filter(env => !(env in process.env))
-	if (missing.length > 0) {
-		console.log(process.cwd())
-		throw new Error(`${missing.join(', ')} not found in environment:\n${JSON.stringify(process.env, null, 2)}`)
-	}
-	return Object.fromEntries(Object.entries(envs).map(([env, varName]) => [varName, process.env[env]]))
-}
-
-export {deploy, loadEnvs}
+export {deploy}

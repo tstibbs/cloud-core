@@ -13,7 +13,7 @@
 	},
 	"scripts": {
 		"build": "rm -rf dist/* && webpack",
-		"test": "node test/test.js",
+		"test": "node test/test-built.cjs && node test/test-templates.mjs",
 		"package": "cd dist && rm -f dist/function.zip && zip -r function.zip .",
 		"deploy": "node deploy/deploy-stack.mjs",
 		"everything": "npm run build && npm run test && npm run package && npm run deploy"
