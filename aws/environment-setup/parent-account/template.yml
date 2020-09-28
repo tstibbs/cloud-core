@@ -11,6 +11,16 @@ Parameters:
   OrganisationId:
     Type: String
     AllowedPattern: ^o-[a-z0-9]{10,32}$
+  NotificationEmailAddress:
+    Type: String
+    AllowedPattern: ^.+@.+$
+  ExpectedIpRanges:
+    Type: String
+    AllowedPattern: ^(\d+\.\d+\.\d+.\d+/\d+)(,\d+\.\d+\.\d+.\d+/\d+)*$
+  CodeVersionLoginMonitor:
+    Type: String
+  Revision:
+    Type: String
 
 Resources: 
 
@@ -49,6 +59,7 @@ Resources:
   CloudTrailLogsBucket:
     Type: AWS::S3::Bucket
     Properties:
+      BucketName: !Sub "${AWS::StackName}-cloudtrail-logs-${AWS::AccountId}"
       PublicAccessBlockConfiguration: 
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -61,6 +72,11 @@ Resources:
               DaysAfterInitiation: 2
             Status: Enabled
             #also "Clean up expired object delete markers" not in cf yet - https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/132
+      # this block needs to be commented out on the first stack deploy, because of circular dependency issues in cloudformation - aws blogs recommend various dodgy 'solutions'
+      NotificationConfiguration: 
+        LambdaConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Function: !GetAtt LoginMonitorFunction.Arn
   CloudTrailLogsBucketPolicy: 
     Type: AWS::S3::BucketPolicy
     Properties: 
@@ -94,6 +110,91 @@ Resources:
           Condition:
             StringEquals:
               s3:x-amz-acl: bucket-owner-full-control
+
+  LogGroup: 
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-login-monitor"
+      RetentionInDays: 120
+
+  LambdaExecutionRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns: 
+        - !Ref LambdaExecutionPolicy
+
+  LambdaExecutionPolicy: 
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Action: 
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource: !GetAtt LogGroup.Arn
+          - 
+            Effect: "Allow"
+            Action: 
+              - "s3:ListBucket"
+            Resource: !Sub "arn:aws:s3:::${AWS::StackName}-cloudtrail-logs-${AWS::AccountId}"
+          - 
+            Effect: "Allow"
+            Action: 
+              - "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${AWS::StackName}-cloudtrail-logs-${AWS::AccountId}/*"
+          - 
+            Effect: "Allow"
+            Action: 
+              - "sns:Publish"
+            Resource: !Ref NotificationsTopic
+
+  LoginMonitorFunction: 
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: !Sub "${AWS::StackName}-login-monitor"
+      Handler: main.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: nodejs12.x
+      Timeout: 20
+      MemorySize: 128
+      Environment:
+        Variables:
+          IP_RANGES: !Ref ExpectedIpRanges
+          ALERTS_TOPIC: !Ref NotificationsTopic
+      Code: 
+        S3Bucket: !Sub "cloudformation-code-deploy-staging-${AWS::AccountId}"
+        S3Key: !Sub "${AWS::StackName}/login-monitor/code.zip"
+        S3ObjectVersion: !Ref CodeVersionLoginMonitor
+      Tags: 
+        - Key: revision
+          Value: !Ref Revision
+  LambdaInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt LoginMonitorFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !Sub "arn:aws:s3:::${AWS::StackName}-cloudtrail-logs-${AWS::AccountId}"
+
+  NotificationsTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      Subscription:
+        - Endpoint: !Ref NotificationEmailAddress
+          Protocol: email
 
 # also turn on billing access via IAM - https://console.aws.amazon.com/billing/home?#/account / IAM User and Role Access to Billing Information / Edit / Activate IAM Access / Update
 

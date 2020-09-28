@@ -14,6 +14,7 @@ const s3 = new AWS.S3({apiVersion: '2006-03-01'})
 const sts = new AWS.STS({apiVersion: '2011-06-15'})
 
 const STAGING_BUCKET_PREFIX = `cloudformation-code-deploy-staging-` // must match the cloud formation template
+const REVISION_PARAM_KEY = 'Revision' // must match parameter in cloud formation template
 
 async function getRevision() {
 	let output = await exec('git rev-parse --verify HEAD')
@@ -66,7 +67,7 @@ async function deploy(stackName, templatePath, capabilities, cfServiceRole, arti
 
 	async function getParamsFromTemplate() {
 		let result = await cloudformation.getTemplateSummary({TemplateBody: templateBody}).promise()
-		return Object.fromEntries(
+		let params = Object.fromEntries(
 			result.Parameters.map(param => [
 				param.ParameterKey,
 				{
@@ -75,6 +76,13 @@ async function deploy(stackName, templatePath, capabilities, cfServiceRole, arti
 				}
 			])
 		)
+		if (REVISION_PARAM_KEY in params) {
+			params[REVISION_PARAM_KEY] = {
+				ParameterKey: REVISION_PARAM_KEY,
+				ParameterValue: revision
+			}
+		}
+		return params
 	}
 
 	async function getStagingBucketName() {
@@ -149,10 +157,7 @@ async function deploy(stackName, templatePath, capabilities, cfServiceRole, arti
 		//wait until execution complete
 		let describeResponse = await waitUntil(
 			() => cloudformation.describeChangeSet(baseParams).promise(),
-			response =>
-				['UNAVAILABLE', 'AVAILABLE', 'EXECUTE_COMPLETE', 'EXECUTE_FAILED', 'OBSOLETE'].includes(
-					response.ExecutionStatus
-				)
+			response => ['EXECUTE_COMPLETE', 'EXECUTE_FAILED', 'OBSOLETE'].includes(response.ExecutionStatus)
 		)
 		if (['EXECUTE_FAILED', 'OBSOLETE'].includes(describeResponse.ExecutionStatus)) {
 			throw new Error(describeResponse.ExecutionStatus)
