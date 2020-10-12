@@ -1,5 +1,3 @@
-# run using: aws cloudformation create-stack --stack-name shared-account-setup --template-body file://template.yml --capabilities CAPABILITY_NAMED_IAM
-
 AWSTemplateFormatVersion: "2010-09-09"
 
 Resources: 
@@ -34,22 +32,6 @@ Resources:
       ManagedPolicyArns: 
         - !Ref DevApiLimitedPolicy
         - !Ref DevApiIamPolicy
-
-  CloudFormationServiceRole: 
-    # to be used by bots (e.g. github actions) so it's important that this policy does not have IAM permissions
-    Type: "AWS::IAM::Role"
-    Properties: 
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-              - cloudformation.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      ManagedPolicyArns: 
-        - !Ref DevApiLimitedPolicy
 
   DevApiIamPolicy: 
     Type: "AWS::IAM::ManagedPolicy"
@@ -296,11 +278,12 @@ Resources:
             Status: Enabled
             #also "Clean up expired object delete markers" not in cf yet - https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/132
 
-# also want to turn on 'block public access' in S3 at the account level, but not in cf yet - https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/168
-# also deactivate unused STS regions in IAM / account settings
-
 Outputs:
-  GoHere: 
+  GoHere1: 
+    Value: !Sub "Now create api tokens for ${DevApiUser}: https://console.aws.amazon.com/iam/home#/users/${DevApiUser}?section=security_credentials"
+  GoHere2: 
     Value: !Sub "Now create api tokens for ${CloudFormationInvokerUser}: https://console.aws.amazon.com/iam/home#/users/${CloudFormationInvokerUser}?section=security_credentials"
   CfServiceRole: 
     Value: !GetAtt CloudFormationServiceRole.Arn
+  DevApiServiceRole: 
+    Value: !GetAtt DevApiServiceRole.Arn
