@@ -1,8 +1,11 @@
 import {strictEqual} from 'assert'
 import fs from 'fs'
 import AWS from 'aws-sdk'
+import dotenv from 'dotenv'
 
 import {exec, readFile} from './utils.js'
+
+dotenv.config() //make sure we've read region config etc
 
 const cloudformation = new AWS.CloudFormation({apiVersion: '2010-05-15'})
 const s3 = new AWS.S3({apiVersion: '2006-03-01'})
@@ -48,7 +51,15 @@ async function waitUntil(generator, checker) {
 	return result
 }
 
-async function deploy(stackName, templatePath, capabilities, cfServiceRole, artifacts, parameters = {}) {
+async function deploy(
+	stackName,
+	templatePath,
+	capabilities,
+	cfServiceRole,
+	artifacts,
+	parameters = {},
+	changeSetType = 'UPDATE'
+) {
 	if (cfServiceRole.length == 0) {
 		throw new Error(`Must specify cfServiceRole as full arn of role cloudformation should run as.`)
 	}
@@ -121,7 +132,7 @@ async function deploy(stackName, templatePath, capabilities, cfServiceRole, arti
 			...baseParams,
 			ChangeSetName: `automated-${Date.now()}`,
 			Capabilities: capabilities,
-			ChangeSetType: 'UPDATE',
+			ChangeSetType: changeSetType,
 			TemplateBody: templateBody,
 			Parameters: parameters,
 			Tags: getRevisionTags(revision),

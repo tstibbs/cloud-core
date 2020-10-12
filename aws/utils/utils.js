@@ -3,7 +3,7 @@ import fs from 'fs'
 import {exec as nodeExec} from 'child_process'
 import dotenv from 'dotenv'
 
-dotenv.config()
+dotenv.config() //make sure we've read region config etc
 
 export function exec(command) {
 	return new Promise((resolve, reject) => {
