@@ -17,6 +17,10 @@ Parameters:
   ExpectedIpRanges:
     Type: String
     AllowedPattern: ^(\d+\.\d+\.\d+.\d+/\d+)(,\d+\.\d+\.\d+.\d+/\d+)*$
+  Budget:
+    Type: Number
+    MinValue: 0.01
+    Description: Expected monthly budget for entire organisation in USD (can be a float)
   CodeVersionLoginMonitor:
     Type: String
   Revision:
@@ -196,7 +200,46 @@ Resources:
         - Endpoint: !Ref NotificationEmailAddress
           Protocol: email
 
-# also turn on billing access via IAM - https://console.aws.amazon.com/billing/home?#/account / IAM User and Role Access to Billing Information / Edit / Activate IAM Access / Update
+  NotificationsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties: 
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: budgets.amazonaws.com
+            Action: "SNS:Publish"
+            Resource: !Ref NotificationsTopic
+      Topics: 
+        - !Ref NotificationsTopic
+
+  OrganisationBudget:
+    Type: "AWS::Budgets::Budget"
+    Properties:
+      Budget:
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: !Ref Budget
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            ThresholdType: PERCENTAGE
+            Threshold: 100
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref NotificationsTopic
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            ThresholdType: PERCENTAGE
+            Threshold: 5
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref NotificationsTopic
 
 Outputs:
   GoHere: 
@@ -207,4 +250,4 @@ Outputs:
     # IsOrganizationTrail not supported by cf yet so have to use cli - https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/45
     Value: !Sub "aws cloudtrail create-trail --name all-accounts-management-events --s3-bucket-name ${CloudTrailLogsBucket} --is-organization-trail --is-multi-region-trail"
   CloudTrailCommand3:
-    Value: !Sub "aws cloudtrail start-logging --name all-accounts-management-events"
+    Value: "aws cloudtrail start-logging --name all-accounts-management-events"

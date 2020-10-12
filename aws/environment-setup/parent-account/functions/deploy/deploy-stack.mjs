@@ -14,7 +14,8 @@ const parameters = loadEnvs({
 	PARAM_ORG_ID: 'OrganisationId',
 	PARAM_PARENT_ACCOUNT_ID: 'ParentAccountId',
 	PARAM_NOTIFICATION_EMAIL_ADDRESS: 'NotificationEmailAddress',
-	IP_RANGES: 'ExpectedIpRanges'
+	IP_RANGES: 'ExpectedIpRanges',
+	BUDGET: 'Budget'
 })
 const {cfServiceRole} = loadEnvs({
 	CF_ROLE_ARN: 'cfServiceRole' //e.g. arn:aws:iam::123456789:role/role-name'
