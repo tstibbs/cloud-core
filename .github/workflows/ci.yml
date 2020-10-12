@@ -19,8 +19,11 @@ jobs:
       with:
         node-version: 12.x
 
+    - run: pip install cfn-lint
+
     - run: npm ci
     - run: npm run build
+    - run: cp dummy.env .env
     - run: npm run test
     - run: npm run package
     # don't run the actual deploy in the CI, but run everything up to here to get the best idea of whether it works

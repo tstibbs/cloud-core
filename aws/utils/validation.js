@@ -1,13 +1,11 @@
-import AWS from 'aws-sdk'
-
-import {readFile} from './utils.js'
-
-const cloudformation = new AWS.CloudFormation({apiVersion: '2010-05-15'})
+import {exec} from './utils.js'
 
 export async function validate(templatePath) {
-	let templateBody = await readFile(templatePath, {encoding: 'utf-8'})
-	let params = {
-		TemplateBody: templateBody
+	try {
+		await exec(`cfn-lint ${templatePath}`)
+	} catch (error) {
+		//I don't really know why node can't just print the full error output when an uncaught exception is thrown
+		console.error(error)
+		throw error
 	}
-	await cloudformation.validateTemplate(params).promise() // will error if template doesn't validate
 }
