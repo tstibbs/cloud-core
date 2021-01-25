@@ -10,6 +10,17 @@ These steps are currently impossible in cloudformation without a lot of hoop jum
 1. Verify users have been created by stack
 1. Delete root account keys
 1. Add account number to the list of accounts in the `ChildAccounts` parameter in the parent-account stack
+1. Update password policy (due to https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/107):
+   ```
+   update-account-password-policy \
+       --minimum-password-length 50 \
+       --require-symbols \
+       --require-numbers \
+       --require-uppercase-characters \
+       --require-lowercase-characters \
+       --no-allow-users-to-change-password \
+       --password-reuse-prevention 24
+   ```
 
 # Root account only
 
