@@ -8,6 +8,7 @@
 	},
 	"devDependencies": {
 		"@tstibbs/cloud-core-utils": "file:../../../utils",
+		"es-main": "^1.0.2",
 		"webpack": "^4.44.1",
 		"webpack-cli": "^3.3.12"
 	},
