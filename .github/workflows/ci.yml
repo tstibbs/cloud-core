@@ -24,7 +24,7 @@ jobs:
       with:
         python-version: '3.x'
     - name: Install python dependencies
-      run: python -m pip install cfn-lint
+      run: pip install cfn-lint
 
     - run: npm ci
     - run: npm run build
