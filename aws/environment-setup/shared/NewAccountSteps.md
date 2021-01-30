@@ -8,11 +8,9 @@ These steps are currently impossible in cloudformation without a lot of hoop jum
 1. Create access keys for root
 1. Run: `aws cloudformation create-stack --stack-name shared-account-setup --template-body file://template.yml --capabilities CAPABILITY_NAMED_IAM`
 1. Verify users have been created by stack
-1. Delete root account keys
-1. Add account number to the list of accounts in the `ChildAccounts` parameter in the parent-account stack
 1. Update password policy (due to https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/107):
    ```
-   update-account-password-policy \
+   aws iam update-account-password-policy \
        --minimum-password-length 50 \
        --require-symbols \
        --require-numbers \
@@ -21,6 +19,8 @@ These steps are currently impossible in cloudformation without a lot of hoop jum
        --no-allow-users-to-change-password \
        --password-reuse-prevention 24
    ```
+1. Delete root account keys
+1. Add account number to the list of accounts in the `ChildAccounts` parameter in the parent-account stack
 
 # Root account only
 
