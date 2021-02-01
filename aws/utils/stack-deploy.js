@@ -33,7 +33,7 @@ async function sleep(seconds) {
 }
 
 async function waitUntil(generator, checker) {
-	const tries = 10
+	const tries = 60
 	const delay = 10 //seconds
 	let result = await generator()
 	console.log(result)
