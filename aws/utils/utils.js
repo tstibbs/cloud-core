@@ -40,8 +40,8 @@ export async function ifCmd(importMeta, doit) {
 		try {
 			await doit()
 		} catch (err) {
-			console.log(err)
-			process.exit(1)
+			console.log(err) //log first because node doesn't always print the error
+			throw err
 		}
 	}
 }

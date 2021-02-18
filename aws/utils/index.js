@@ -1,5 +1,5 @@
 import {deploy} from './stack-deploy.js'
-import {loadEnvs, ifCmd} from './utils.js'
-import {validate, validateWithExit} from './validation.js'
+import {loadEnvs, ifCmd, exec} from './utils.js'
+import {validate} from './validation.js'
 
-export {deploy, loadEnvs, validate, validateWithExit, ifCmd}
+export {deploy, loadEnvs, validate, ifCmd, exec}

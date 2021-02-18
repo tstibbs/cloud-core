@@ -1,3 +1,4 @@
-import {validateWithExit} from '@tstibbs/cloud-core-utils'
+import {validate} from '@tstibbs/cloud-core-utils'
 
-validateWithExit('../template.yml', '../../shared/template.yml')
+await validate('../template.yml')
+await validate('../../shared/template.yml')

@@ -10,12 +10,3 @@ export async function validate(templatePath) {
 		throw error
 	}
 }
-
-export function validateWithExit(...paths) {
-	let promises = paths.map(validate)
-	//this is a dirty workaround until we can use node14 and await stuff at the top level
-	return Promise.all(promises).catch(err => {
-		console.log(err)
-		process.exit(1)
-	})
-}
