@@ -60,6 +60,32 @@ Resources:
               - "sts:AssumeRole"
             Resource: !Split [ ",", !Join [ "", ["arn:aws:iam::", !Join [ ":role/OrganizationAccountAccessRole,arn:aws:iam::", !Ref ChildAccounts ], ":role/OrganizationAccountAccessRole"]]]
 
+  AllAccountCliEntryUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: AllAccountCliEntryUser
+      Groups:
+        - !Ref AllAccountCliEntryGroup
+
+  AllAccountCliEntryGroup: 
+    Type: "AWS::IAM::Group"
+    Properties: 
+      ManagedPolicyArns: 
+        - !Ref AllAccountCliEntryPolicy
+
+  AllAccountCliEntryPolicy: 
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            # admin permissions on each child account
+            Effect: "Allow"
+            Action: 
+              - "sts:AssumeRole"
+            Resource: !Split [ ",", !Join [ "", ["arn:aws:iam::", !Join [ ":role/ParentAccountCliRole,arn:aws:iam::", !Ref ChildAccounts ], ":role/ParentAccountCliRole,arn:aws:iam::", !Join [ ":role/ScoutSuiteRole,arn:aws:iam::", !Ref ChildAccounts ], ":role/ScoutSuiteRole"]]]
+
   CloudTrailLogsBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -325,8 +351,10 @@ Resources:
               Address: !Ref NotificationsTopic
 
 Outputs:
-  GoHere: 
-    Value: !Sub "Now create a password for ${AllAccountAdminUser}: https://console.aws.amazon.com/iam/home#/users/${AllAccountAdminUser}?section=security_credentials"
+  GoHere1: 
+    Value: !Sub "Now create a password for ${AllAccountAdminUser}: https://console.aws.amazon.com/iam/home#/users/${AllAccountAdminUser}?section=security_credentials" 
+  GoHere2:
+    Value: !Sub "Now create api tokens for ${AllAccountCliEntryUser}: https://console.aws.amazon.com/iam/home#/users/${AllAccountCliEntryUser}?section=security_credentials"
   CloudTrailCommand1:
     Value: "aws organizations enable-aws-service-access --service-principal cloudtrail.amazonaws.com"
   CloudTrailCommand2:

@@ -7,26 +7,13 @@ Parameters:
     MaxLength: 12
     MinLength: 12
 
-Resources: 
+Resources:
 
-  DevApiUser:
-    Type: AWS::IAM::User
-    Properties:
-      UserName: DevApiUser
-      Groups:
-        - !Ref DevApiGroup
-
-  DevApiGroup: 
-    Type: "AWS::IAM::Group"
-    Properties: 
-      ManagedPolicyArns: 
-        - !Ref DevApiLimitedPolicy
-        - !Ref DevApiIamPolicy
-
-  DevApiServiceRole: 
+  ParentAccountCliRole: 
     # to be used by real users, not bots (e.g. github actions)
     Type: "AWS::IAM::Role"
     Properties: 
+      RoleName: 'ParentAccountCliRole'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -34,6 +21,12 @@ Resources:
             Principal:
               Service:
               - cloudformation.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+          - Effect: Allow
+            Principal:
+              # Note that if the parent account stack is dropped and recreated, this trust relationship will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
+              AWS: !Sub "arn:aws:iam::${ParentAccountId}:user/AllAccountCliEntryUser"
             Action:
               - 'sts:AssumeRole'
       ManagedPolicyArns: 
@@ -285,10 +278,19 @@ Resources:
             Status: Enabled
             #also "Clean up expired object delete markers" not in cf yet - https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/132
 
-  ScoutSuiteUser:
-    Type: AWS::IAM::User
-    Properties:
-      UserName: ScoutSuiteUser
+  ScoutSuiteRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: 'ScoutSuiteRole'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              # Note that if the parent account stack is dropped and recreated, this trust relationship will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
+              AWS: !Sub "arn:aws:iam::${ParentAccountId}:user/AllAccountCliEntryUser"
+            Action:
+              - 'sts:AssumeRole'
       ManagedPolicyArns: 
         - !Ref ScoutSuitePolicy
 
@@ -465,37 +467,12 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       ManagedPolicyArns: 
-        # - !Ref AutomationAdminCheckPolicy
         - "arn:aws:iam::aws:policy/ReadOnlyAccess"
 
-  # AutomationAdminCheckPolicy: 
-  #   Type: "AWS::IAM::ManagedPolicy"
-  #   Properties: 
-  #     PolicyDocument: 
-  #       Version: "2012-10-17"
-  #       Statement: 
-  #         - 
-  #           Effect: "Allow"
-  #           Action: 
-  #             - "cloudformation:DescribeStackDriftDetectionStatus"
-  #             - "cloudformation:ListStacks"
-  #           Resource: "*"
-  #         - 
-  #           Effect: "Allow"
-  #           Action: 
-  #             - "cloudformation:DetectStackDrift"
-  #             - "cloudformation:ListStackResources"
-  #             - "cloudformation:DetectStackResourceDrift"
-  #           Resource: "arn:aws:cloudformation:*:*:stack/*/*"
-
 Outputs:
-  GoHere1: 
-    Value: !Sub "Now create api tokens for ${DevApiUser}: https://console.aws.amazon.com/iam/home#/users/${DevApiUser}?section=security_credentials"
-  GoHere2: 
+  GoHere: 
     Value: !Sub "Now create api tokens for ${CloudFormationInvokerUser}: https://console.aws.amazon.com/iam/home#/users/${CloudFormationInvokerUser}?section=security_credentials"
-  GoHere3: 
-    Value: !Sub "Now create api tokens for ${ScoutSuiteUser}: https://console.aws.amazon.com/iam/home#/users/${ScoutSuiteUser}?section=security_credentials"
   CfServiceRole: 
     Value: !GetAtt CloudFormationServiceRole.Arn
-  DevApiServiceRole: 
-    Value: !GetAtt DevApiServiceRole.Arn
+  CfDeveloperServiceRole: 
+    Value: !GetAtt ParentAccountCliRole.Arn
