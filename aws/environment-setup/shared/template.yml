@@ -1,5 +1,12 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
+Parameters:
+
+  ParentAccountId:
+    Type: String
+    MaxLength: 12
+    MinLength: 12
+
 Resources: 
 
   DevApiUser:
@@ -442,6 +449,44 @@ Resources:
               - "sqs:GetQueueAttributes"
               - "sqs:ListQueues"
             Resource: "*"
+
+  AutomationAdminCheckRole: 
+    # this is the role that actually does the work of checking the cloudformation stacks for drift
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: 'automation-admin-check'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              # Note that if the parent account stack is dropped and recreated, this trust relationship will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
+              AWS: !Sub "arn:aws:iam::${ParentAccountId}:role/automation-admin-checker"
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns: 
+        # - !Ref AutomationAdminCheckPolicy
+        - "arn:aws:iam::aws:policy/ReadOnlyAccess"
+
+  # AutomationAdminCheckPolicy: 
+  #   Type: "AWS::IAM::ManagedPolicy"
+  #   Properties: 
+  #     PolicyDocument: 
+  #       Version: "2012-10-17"
+  #       Statement: 
+  #         - 
+  #           Effect: "Allow"
+  #           Action: 
+  #             - "cloudformation:DescribeStackDriftDetectionStatus"
+  #             - "cloudformation:ListStacks"
+  #           Resource: "*"
+  #         - 
+  #           Effect: "Allow"
+  #           Action: 
+  #             - "cloudformation:DetectStackDrift"
+  #             - "cloudformation:ListStackResources"
+  #             - "cloudformation:DetectStackResourceDrift"
+  #           Resource: "arn:aws:cloudformation:*:*:stack/*/*"
 
 Outputs:
   GoHere1: 

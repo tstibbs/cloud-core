@@ -21,7 +21,7 @@ Parameters:
     Type: Number
     MinValue: 0.01
     Description: Expected monthly budget for entire organisation in USD (can be a float)
-  CodeVersionLoginMonitor:
+  CodeVersion:
     Type: String
   Revision:
     Type: String
@@ -115,13 +115,13 @@ Resources:
             StringEquals:
               s3:x-amz-acl: bucket-owner-full-control
 
-  LogGroup: 
+  LoginMonitorLogGroup: 
     Type: AWS::Logs::LogGroup
     Properties: 
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-login-monitor"
       RetentionInDays: 120
 
-  LambdaExecutionRole: 
+  LoginMonitorLambdaExecutionRole: 
     Type: "AWS::IAM::Role"
     Properties: 
       AssumeRolePolicyDocument:
@@ -134,9 +134,9 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       ManagedPolicyArns: 
-        - !Ref LambdaExecutionPolicy
+        - !Ref LoginMonitorLambdaExecutionPolicy
 
-  LambdaExecutionPolicy: 
+  LoginMonitorLambdaExecutionPolicy: 
     Type: "AWS::IAM::ManagedPolicy"
     Properties: 
       PolicyDocument: 
@@ -147,7 +147,7 @@ Resources:
             Action: 
               - "logs:CreateLogStream"
               - "logs:PutLogEvents"
-            Resource: !GetAtt LogGroup.Arn
+            Resource: !GetAtt LoginMonitorLogGroup.Arn
           - 
             Effect: "Allow"
             Action: 
@@ -168,8 +168,8 @@ Resources:
     Type: AWS::Lambda::Function
     Properties: 
       FunctionName: !Sub "${AWS::StackName}-login-monitor"
-      Handler: main.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: loginChecker.handler
+      Role: !GetAtt LoginMonitorLambdaExecutionRole.Arn
       Runtime: nodejs14.x
       Timeout: 20
       MemorySize: 128
@@ -179,12 +179,12 @@ Resources:
           ALERTS_TOPIC: !Ref NotificationsTopic
       Code: 
         S3Bucket: !Sub "cloudformation-code-deploy-staging-${AWS::AccountId}"
-        S3Key: !Sub "${AWS::StackName}/login-monitor/code.zip"
-        S3ObjectVersion: !Ref CodeVersionLoginMonitor
+        S3Key: !Sub "${AWS::StackName}/function-code/code.zip"
+        S3ObjectVersion: !Ref CodeVersion
       Tags: 
         - Key: revision
           Value: !Ref Revision
-  LambdaInvokePermission:
+  LoginMonitorLambdaInvokePermission:
     Type: 'AWS::Lambda::Permission'
     Properties:
       FunctionName: !GetAtt LoginMonitorFunction.Arn
@@ -192,6 +192,89 @@ Resources:
       Principal: s3.amazonaws.com
       SourceAccount: !Ref 'AWS::AccountId'
       SourceArn: !Sub "arn:aws:s3:::${AWS::StackName}-cloudtrail-logs-${AWS::AccountId}"
+
+  CfnStackDriftCheckerLogGroup: 
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-cfn-stack-drift-checker"
+      RetentionInDays: 120
+
+  CfnStackDriftCheckerLambdaExecutionRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: 'automation-admin-checker'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns: 
+        - !Ref CfnStackDriftCheckerLambdaExecutionPolicy
+
+  CfnStackDriftCheckerLambdaExecutionPolicy: 
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Action: 
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource: !GetAtt CfnStackDriftCheckerLogGroup.Arn
+          - 
+            Effect: "Allow"
+            Action: 
+              - "sns:Publish"
+            Resource: !Ref NotificationsTopic
+          - 
+            Effect: "Allow"
+            Action: 
+              - "sts:AssumeRole"
+            #allow it to assume the relevant role in each child account (including this one)
+            Resource: !Split [ ",", !Join [ "", ["arn:aws:iam::", !Join [ ":role/automation-admin-check,arn:aws:iam::", !Ref ChildAccounts ], ":role/automation-admin-check"]]]
+
+  CfnStackDriftCheckerFunction: 
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: !Sub "${AWS::StackName}-cfn-stack-drift-checker"
+      Handler: cfnStackDriftChecker.handler
+      Role: !GetAtt CfnStackDriftCheckerLambdaExecutionRole.Arn
+      Runtime: nodejs14.x
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          ALERTS_TOPIC: !Ref NotificationsTopic
+          CHILD_ACCOUNTS: !Join [ ",", !Ref ChildAccounts ]
+      Code: 
+        S3Bucket: !Sub "cloudformation-code-deploy-staging-${AWS::AccountId}"
+        S3Key: !Sub "${AWS::StackName}/function-code/code.zip"
+        S3ObjectVersion: !Ref CodeVersion
+      Tags: 
+        - Key: revision
+          Value: !Ref Revision
+  CfnStackDriftCheckerFunctionInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CfnStackDriftCheckerFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CfnStackDriftCheckerSchedule.Arn
+
+  CfnStackDriftCheckerSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: "cron(0 1 * * ? *)"
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt CfnStackDriftCheckerFunction.Arn
+          Id: 'CfnStackDriftCheckerFunction'
 
   NotificationsTopic:
     Type: AWS::SNS::Topic

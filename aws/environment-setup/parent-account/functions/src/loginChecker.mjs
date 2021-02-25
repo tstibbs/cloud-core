@@ -1,19 +1,12 @@
 import util from 'util'
 import zlib from 'zlib'
-import aws from 'aws-sdk'
-import dotenv from 'dotenv'
 import ipRangeCheck from 'ip-range-check'
 
-const gunzip = util.promisify(zlib.gunzip)
-
-dotenv.config()
-
-aws.config.update({region: 'eu-west-2'})
-const s3 = new aws.S3({apiVersion: '2006-03-01'})
-const sns = new aws.SNS({apiVersion: '2010-03-31'})
+import {publishNotification, s3} from './utils.mjs'
 
 const acceptableIpRanges = process.env.IP_RANGES.split(',')
-const alertsTopic = process.env.ALERTS_TOPIC //needs to be full arn
+
+const gunzip = util.promisify(zlib.gunzip)
 
 const EVENT_SOURCE = 'signin.amazonaws.com'
 const EVENT_TYPE = 'AwsConsoleSignIn'
@@ -99,14 +92,11 @@ async function publishAlert(records, invocationId) {
 	if (records.length > 0) {
 		let data = JSON.stringify(records, null, 2)
 		console.log('publishing sns alert')
-		await sns
-			.publish({
-				Message: `The following cloudtrail records originated from IPs that weren't in expected ranges:\n\n${data}\n\ninvocationId=${invocationId}`,
-				TopicArn: alertsTopic,
-				Subject: 'AWS account login alert'
-			})
-			.promise()
-		console.log('published sns alert')
+		await publishNotification(
+			`The following cloudtrail records originated from IPs that weren't in expected ranges:\n\n${data}`,
+			'AWS account login alert',
+			invocationId
+		)
 	} else {
 		console.log(`not publishing sns alert, records.length=${records.length}`)
 	}

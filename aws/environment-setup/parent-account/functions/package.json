@@ -4,7 +4,9 @@
 	"dependencies": {
 		"aws-sdk": "^2.761.0",
 		"dotenv": "^8.2.0",
-		"ip-range-check": "^0.2.0"
+		"exponential-backoff": "^3.1.0",
+		"ip-range-check": "^0.2.0",
+		"lodash": "^4.17.21"
 	},
 	"devDependencies": {
 		"@tstibbs/cloud-core-utils": "file:../../../utils",
@@ -14,7 +16,7 @@
 	},
 	"scripts": {
 		"build": "rm -rf dist/* && webpack",
-		"test": "node test/test-built.cjs && node test/test-templates.mjs",
+		"test": "node test/test-built.mjs && node test/test-templates.mjs",
 		"package": "cd dist && rm -f dist/function.zip && zip -r function.zip .",
 		"deploy": "node deploy/deploy-stack.mjs",
 		"everything": "npm run build && npm run test && npm run package && npm run deploy"

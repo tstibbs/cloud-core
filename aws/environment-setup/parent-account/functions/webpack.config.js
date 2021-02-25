@@ -4,7 +4,10 @@ let config = {
 	mode: mode,
 	devtool: 'inline-source-map',
 	target: 'node',
-	entry: './src/app.js',
+	entry: {
+		loginChecker: './src/loginChecker.mjs',
+		cfnStackDriftChecker: './src/cfnStackDriftChecker.mjs'
+	},
 	output: {
 		libraryTarget: 'commonjs2'
 	}

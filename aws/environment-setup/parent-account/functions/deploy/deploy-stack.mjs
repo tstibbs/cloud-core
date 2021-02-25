@@ -1,12 +1,12 @@
-import {deploy, loadEnvs} from '@tstibbs/cloud-core-utils'
+import {deploy, loadEnvs, ifCmd} from '@tstibbs/cloud-core-utils'
 
 const stackName = 'root-account-setup'
 const templatePath = '../template.yml'
 const capabilities = ['CAPABILITY_NAMED_IAM']
 const artifacts = {
-	'login-monitor': {
+	'function-code': {
 		file: './dist/function.zip',
-		versionParameterToInject: 'CodeVersionLoginMonitor'
+		versionParameterToInject: 'CodeVersion'
 	}
 }
 const parameters = loadEnvs({
@@ -20,4 +20,8 @@ const parameters = loadEnvs({
 const {cfServiceRole} = loadEnvs({
 	CF_ROLE_ARN: 'cfServiceRole' //e.g. arn:aws:iam::123456789:role/role-name'
 })
-deploy(stackName, templatePath, capabilities, cfServiceRole, artifacts, parameters)
+async function run() {
+	deploy(stackName, templatePath, capabilities, cfServiceRole, artifacts, parameters)
+}
+
+await ifCmd(import.meta, run)
