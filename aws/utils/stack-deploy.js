@@ -135,7 +135,6 @@ async function deploy(
 			ChangeSetType: changeSetType,
 			TemplateBody: templateBody,
 			Parameters: parameters,
-			Tags: getRevisionTags(revision),
 			RoleARN: cfServiceRole
 		}
 		let createResponse = await cloudformation.createChangeSet(createParams).promise()
