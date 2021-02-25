@@ -39,16 +39,44 @@ async function checkOneStack(cloudformation, stackName) {
 		assertNotPaging(statusResponse)
 		let detectionStatus = statusResponse.DetectionStatus
 		console.log(`${stackName}: ${detectionStatus}`)
-		if (detectionStatus == detectionFailed) {
-			return detectionFailed // if the detection failed we don't really care about the drift status
-		} else if (detectionStatus == detectionComplete) {
-			return statusResponse.StackDriftStatus
+		if (detectionStatus == detectionFailed || detectionStatus == detectionComplete) {
+			return statusResponse
 		} else {
 			throw new Error(`Detection status: ${detectionStatus}`)
 		}
 	}
 
-	let driftStatus = await backOff.backOff(checkForCompletion, backoffParams)
+	let statusResponse = await backOff.backOff(checkForCompletion, backoffParams)
+	let detectionStatus = statusResponse.DetectionStatus
+	let driftStatus = null
+	if (detectionStatus == detectionFailed) {
+		driftStatus = detectionFailed // if the detection failed we don't really care about the drift status
+	} else if (detectionStatus == detectionComplete) {
+		driftStatus = statusResponse.StackDriftStatus
+		if (statusResponse.StackDriftStatus == driftStatusDrifted) {
+			//if 'drifted' then apply extra filtering because cloudformation drift detection is fundamentally broken (see https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/791)
+			let resourceDrifts = await cloudformation
+				.describeStackResourceDrifts({
+					StackName: stackName,
+					StackResourceDriftStatusFilters: ['MODIFIED']
+				})
+				.promise()
+			console.log(JSON.stringify(resourceDrifts, null, 2))
+			assertNotPaging(resourceDrifts)
+			//if the only diffs are APIs and the only diffs are empty bodies, then ignore
+			let diffsAreAcceptable = resourceDrifts.StackResourceDrifts.every(
+				drift =>
+					drift.ResourceType == 'AWS::ApiGatewayV2::Api' &&
+					drift.PropertyDifferences.every(diff => diff.PropertyPath == '/Body' && diff.ActualValue == 'null')
+			)
+			if (diffsAreAcceptable) {
+				driftStatus = driftStatusInSync
+			}
+		}
+	} else {
+		assert.fail('should never happen') //because the call to backOff should have thrown an error
+	}
+
 	return {
 		stackName,
 		driftStatus
@@ -65,13 +93,11 @@ async function checkOneAccount(accountId) {
 	assertNotPaging(stackResponse)
 
 	let data = await inSeries(stacks, async stack => await checkOneStack(cloudformation, stack))
-	// let data = await Promise.all(stacks.map(stack => checkOneStack(cloudformation, accountId, stack)))
 	let failures = data.filter(result => result.driftStatus == detectionFailed)
 	data = data.filter(result => result.driftStatus != detectionFailed)
 	if (failures.length > 0) {
 		console.log(`Retrying: ${accountId} / ${stacks}`)
 		await sleep(30 * 1000) // most common cause of failure is rate exceeded, so try again with a smaller set
-		// let data2 = await Promise.all(failures.map(stack => checkOneStack(cloudformation, accountId, stack.stackName)))
 		let data2 = await inSeries(failures, async stack => await checkOneStack(cloudformation, stack))
 		data = [...data, ...data2]
 	}
