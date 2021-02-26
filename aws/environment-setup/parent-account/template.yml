@@ -355,10 +355,3 @@ Outputs:
     Value: !Sub "Now create a password for ${AllAccountAdminUser}: https://console.aws.amazon.com/iam/home#/users/${AllAccountAdminUser}?section=security_credentials" 
   GoHere2:
     Value: !Sub "Now create api tokens for ${AllAccountCliEntryUser}: https://console.aws.amazon.com/iam/home#/users/${AllAccountCliEntryUser}?section=security_credentials"
-  CloudTrailCommand1:
-    Value: "aws organizations enable-aws-service-access --service-principal cloudtrail.amazonaws.com"
-  CloudTrailCommand2:
-    # IsOrganizationTrail not supported by cf yet so have to use cli - https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/45
-    Value: !Sub "aws cloudtrail create-trail --name all-accounts-management-events --s3-bucket-name ${CloudTrailLogsBucket} --is-organization-trail --is-multi-region-trail"
-  CloudTrailCommand3:
-    Value: "aws cloudtrail start-logging --name all-accounts-management-events"
