@@ -18,6 +18,11 @@ jobs:
     - uses: actions/setup-node@v1
       with:
         node-version: 14.x
+    # Upgrade npm so it works with our lockfile versions
+    - name: Upgrade npm
+      run: npm install -g npm@latest
+    - name: Install node dependencies
+      run: npm install -g aws-cdk
 
     - name: Set up Python
       uses: actions/setup-python@v2
@@ -25,7 +30,9 @@ jobs:
         python-version: '3.x'
     - name: Install python dependencies
       run: pip install cfn-lint
-
+      
+    - run: npm ci
+      working-directory: aws/utils
     - run: npm ci
     - run: npm run build
     - run: cp dummy.env .env

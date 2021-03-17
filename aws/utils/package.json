@@ -7,9 +7,16 @@
 		"*.js"
 	],
 	"main": "index.js",
+	"bin": {
+		"cdk-tools": "./src/cdkTools/cli.js"
+	},
 	"dependencies": {
+		"@aws-cdk/assert": "^1.94.1",
+		"aws-cdk": "^1.94.1",
 		"aws-sdk": "^2.752.0",
 		"dotenv": "^8.2.0",
-		"es-main": "^1.0.2"
+		"es-main": "^1.0.2",
+		"node-watch-changes": "^2.0.3",
+		"yargs": "^16.2.0"
 	}
 }
