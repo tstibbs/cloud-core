@@ -4,6 +4,8 @@ import {hideBin} from 'yargs/helpers'
 
 import {watchDev} from './watchDev.js'
 
+const {CF_ROLE_ARN} = process.env
+
 function run(command) {
 	return new Promise((resolve, reject) => {
 		let childProcess = spawn('bash', ['-c', command], {
@@ -31,14 +33,23 @@ function parseAdditionalArgs(argv) {
 	}
 }
 
+function specifyRoleArn(args) {
+	if (!args.includes('--role-arn') && CF_ROLE_ARN != null && CF_ROLE_ARN.length > 0) {
+		return `--role-arn=${CF_ROLE_ARN} ${args}`
+	} else {
+		return args
+	}
+}
+
 async function watch(argv) {
 	await watchDev(argv.additionalNpmScript)
 }
 
 export async function testsynth(argv) {
 	let otherArgs = parseAdditionalArgs(argv)
+	let args = specifyRoleArn(otherArgs)
 	let stack = process.env.STACK || ''
-	await run(`cdk synth --version-reporting false --asset-metadata false ${otherArgs} ${stack} > cdk.tmp/template.yml`)
+	await run(`cdk synth --version-reporting false --asset-metadata false ${args} ${stack} > cdk.tmp/template.yml`)
 }
 
 async function testcdk(argv) {
@@ -48,12 +59,15 @@ async function testcdk(argv) {
 
 async function dryrun(argv) {
 	let otherArgs = parseAdditionalArgs(argv)
-	await run(`cdk diff ${otherArgs}`)
+	let args = specifyRoleArn(otherArgs)
+	await run(`cdk diff ${args}`)
 }
 
 async function deploy(argv) {
 	let otherArgs = parseAdditionalArgs(argv)
-	await run(`cdk deploy ${otherArgs}`)
+	let args = specifyRoleArn(otherArgs)
+	let stack = process.env.STACK || ''
+	await run(`cdk deploy ${args} ${stack}`)
 }
 
 export function cli() {

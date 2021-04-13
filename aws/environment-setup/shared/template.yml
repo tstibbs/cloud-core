@@ -32,6 +32,7 @@ Resources:
       ManagedPolicyArns: 
         - !Ref DevApiLimitedPolicy
         - !Ref DevApiIamPolicy
+        - !Ref CloudFormationInvokerPolicy
 
   DevApiIamPolicy: 
     Type: "AWS::IAM::ManagedPolicy"
@@ -137,6 +138,7 @@ Resources:
     Properties: 
       ManagedPolicyArns: 
         - !Ref CloudFormationInvokerPolicy
+        - !Ref CloudFormationInvokerLimitedPolicy
 
   CloudFormationInvokerPolicy: 
     Type: "AWS::IAM::ManagedPolicy"
@@ -145,18 +147,33 @@ Resources:
         Version: "2012-10-17"
         Statement: 
           - 
-            # can push artifacts to S3 (that could be referenced in the cloudformation stack)
+            # can assume the various CDK roles
             Effect: "Allow"
             Action: 
-              - "s3:PutObject"
-              - "s3:GetObject"
-              - "s3:PutObjectTagging"
-              - "s3:GetObjectVersion"
-              - "s3:ListMultipartUploadParts"
-              - "s3:AbortMultipartUpload"
-            Resource: !Sub
-              - "${Bucket}/*"
-              - { Bucket: !GetAtt CfStagingBucket.Arn }
+              - "sts:AssumeRole"
+            Resource:
+              - !Sub "arn:aws:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+              - !Sub "arn:aws:iam::${AWS::AccountId}:role/cdk-hnb659fds-image-publishing-role-${AWS::AccountId}-${AWS::Region}"
+            Condition: 
+              StringEquals: 
+                "aws:RequestedRegion":
+                  - eu-west-1
+                  - eu-west-2
+
+  CloudFormationInvokerLimitedPolicy: 
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            # can read from S3 (needed for the invoker to check what assets are staged in s3)
+            Effect: "Allow"
+            Action: 
+              - "s3:Get*"
+              - "s3:List*"
+            Resource:
+              - !Sub "arn:aws:s3:::cdk-hnb659fds-assets-${AWS::AccountId}-eu-west-2"
             Condition: 
               StringEquals: 
                 "aws:RequestedRegion":
@@ -241,6 +258,8 @@ Resources:
               - "cloudformation:UpdateStackInstances"
               - "cloudformation:UpdateTerminationProtection"
               - "cloudformation:ValidateTemplate"
+              - "cloudformation:DeleteChangeSet"
+              - "ssm:GetParameter"
             Resource: "*"
             Condition: 
               StringEquals: 
@@ -251,7 +270,6 @@ Resources:
             #... except for some things you probably won't want to do through the api (and could be dangerous) or allow a remote user to do - note these shouldn't be declared above but are explicitly denied for safety
             Effect: "Deny"
             Action: 
-              - "cloudformation:DeleteChangeSet"
               - "cloudformation:DeleteStack"
               - "cloudformation:DeleteStackInstances"
               - "cloudformation:DeleteStackSet"
