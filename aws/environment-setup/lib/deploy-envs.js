@@ -14,3 +14,6 @@ async function getRevision() {
 }
 
 export const REVISION = await getRevision()
+
+//should only be used for testing
+export const {CURRENT_ACCOUNT} = process.env
