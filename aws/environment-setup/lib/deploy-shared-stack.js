@@ -9,7 +9,7 @@ import {
 import {PARENT_ACCOUNT_ID} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 
-class SharedStack extends cdk.Stack {
+class AllAccountsStack extends cdk.Stack {
 	constructor(scope, id, props) {
 		super(scope, id, props)
 		let devApiLimitedPolicy = buildDevApiLimitedPolicy(this)
@@ -66,4 +66,4 @@ function createScoutSuiteElements(scope) {
 	})
 }
 
-export {SharedStack}
+export {AllAccountsStack}

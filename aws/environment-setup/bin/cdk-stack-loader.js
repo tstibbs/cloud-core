@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import {buildParentStack, buildSharedStack} from '../lib/deploy-utils.js'
+import {buildAllAccountsStack, buildParentAccountCoreStack, buildParentAccountInfraStack} from '../lib/deploy-utils.js'
 
-buildSharedStack()
-buildParentStack()
+buildAllAccountsStack()
+buildParentAccountCoreStack()
+buildParentAccountInfraStack()

@@ -1,13 +1,18 @@
 import cdk from '@aws-cdk/core'
-import {ParentStack} from '../lib/deploy-parent-stack.js'
-import {SharedStack} from '../lib/deploy-shared-stack.js'
+import {ParentAccountCoreStack} from '../lib/deploy-parent-core-stack.js'
+import {ParentAccountInfraStack} from '../lib/deploy-parent-infra-stack.js'
+import {AllAccountsStack} from '../lib/deploy-shared-stack.js'
 
 const app = new cdk.App()
 
-export function buildParentStack() {
-	return new ParentStack(app, 'ParentStack')
+export function buildParentAccountCoreStack() {
+	return new ParentAccountCoreStack(app, 'ParentAccountCoreStack')
 }
 
-export function buildSharedStack() {
-	return new SharedStack(app, 'SharedStack')
+export function buildParentAccountInfraStack() {
+	return new ParentAccountInfraStack(app, 'ParentAccountInfraStack')
+}
+
+export function buildAllAccountsStack() {
+	return new AllAccountsStack(app, 'AllAccountsStack')
 }
