@@ -57,34 +57,35 @@ function buildConfigPlatform(scope) {
 			deliveryFrequency: 'TwentyFour_Hours'
 		}
 	})
+
+	return configurationRecorder
 }
 
-function buildConfigRules(scope) {
-	new config.ManagedRule(scope, 'ruleIamRootAccessKeyCheck', {
-		identifier: 'IAM_ROOT_ACCESS_KEY_CHECK'
-	})
-
-	new config.ManagedRule(scope, 'ruleRootAccountMfaEnabled', {
-		identifier: 'ROOT_ACCOUNT_MFA_ENABLED'
-	})
-
-	new config.ManagedRule(scope, 'ruleMfaEnabledForIamConsoleAccess', {
-		identifier: 'MFA_ENABLED_FOR_IAM_CONSOLE_ACCESS'
-	})
-
-	new config.ManagedRule(scope, 'ruleAccessKeysRotated', {
-		identifier: 'ACCESS_KEYS_ROTATED',
-		inputParameters: {
-			maxAccessKeyAge: 2
-		}
-	})
-
-	new config.ManagedRule(scope, 'ruleIamUserUnusedCredentialsCheck', {
-		identifier: 'IAM_USER_UNUSED_CREDENTIALS_CHECK',
-		inputParameters: {
-			maxCredentialUsageAge: 2
-		}
-	})
+function buildConfigRules(scope, configurationRecorder) {
+	let rules = [
+		new config.ManagedRule(scope, 'ruleIamRootAccessKeyCheck', {
+			identifier: config.ManagedRuleIdentifiers.IAM_ROOT_ACCESS_KEY_CHECK
+		}),
+		new config.ManagedRule(scope, 'ruleRootAccountMfaEnabled', {
+			identifier: config.ManagedRuleIdentifiers.ROOT_ACCOUNT_MFA_ENABLED
+		}),
+		new config.ManagedRule(scope, 'ruleMfaEnabledForIamConsoleAccess', {
+			identifier: config.ManagedRuleIdentifiers.MFA_ENABLED_FOR_IAM_CONSOLE_ACCESS
+		}),
+		new config.ManagedRule(scope, 'ruleAccessKeysRotated', {
+			identifier: config.ManagedRuleIdentifiers.ACCESS_KEYS_ROTATED,
+			inputParameters: {
+				maxAccessKeyAge: 2
+			}
+		}),
+		new config.ManagedRule(scope, 'ruleIamUserUnusedCredentialsCheck', {
+			identifier: config.ManagedRuleIdentifiers.IAM_USER_UNUSED_CREDENTIALS_CHECK,
+			inputParameters: {
+				maxCredentialUsageAge: 2
+			}
+		})
+	]
+	rules.forEach(rule => rule.node.addDependency(configurationRecorder))
 }
 
 function buildNotificationRules(scope, notificationTopic) {
@@ -123,7 +124,7 @@ event: ${wholeEvent}
 }
 
 export function buildAwsConfigStack(scope, notificationTopic) {
-	buildConfigPlatform(scope)
-	buildConfigRules(scope)
+	let configurationRecorder = buildConfigPlatform(scope)
+	buildConfigRules(scope, configurationRecorder)
 	buildNotificationRules(scope, notificationTopic)
 }
