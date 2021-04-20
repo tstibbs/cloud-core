@@ -3,7 +3,7 @@ import _ from 'lodash'
 import assert from 'assert'
 import backOff from 'exponential-backoff'
 
-import {publishNotification, buildCfnForAccount} from './utils.mjs'
+import {publishNotification, buildCfnForAccount} from './utils.js'
 
 const childAccounts = process.env.CHILD_ACCOUNTS.split(',')
 

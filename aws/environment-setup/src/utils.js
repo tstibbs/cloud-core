@@ -1,7 +1,5 @@
 import aws from 'aws-sdk'
-import dotenv from 'dotenv'
-
-dotenv.config()
+import 'dotenv/config.js'
 
 const alertsTopic = process.env.ALERTS_TOPIC //needs to be full arn
 

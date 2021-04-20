@@ -6,6 +6,7 @@ These steps are currently impossible in cloudformation without a lot of hoop jum
 1. Turn on 'block public access' in S3 at the account level (cloudformation issue: https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/168)
 1. Deactivate unused STS regions in IAM / account settings
 1. Create access keys for root
+1. Bootstrap account for CDK (ensuring to use a cdk.json that specifies new-style synthesis) `cdk bootstrap --cloudformation-execution-policies=arn:aws:iam::aws:policy/ResourceGroupsandTagEditorReadOnlyAccess --bootstrap-kms-key-id AWS_MANAGED_KEY --profile [aws profile name]`
 1. Run: `aws cloudformation create-stack --stack-name shared-account-setup --template-body file://template.yml --capabilities CAPABILITY_NAMED_IAM`
 1. Verify users have been created by stack
 1. Update password policy (due to https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/107):
@@ -20,7 +21,7 @@ These steps are currently impossible in cloudformation without a lot of hoop jum
        --password-reuse-prevention 24
    ```
 1. Delete root account keys
-1. Run delete-vpcs.sh
+1. Run tools/delete-vpcs.sh
 1. Add account number to the list of accounts in the `ChildAccounts` parameter in the parent-account stack
 
 # Root account only

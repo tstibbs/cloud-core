@@ -2,7 +2,7 @@ import util from 'util'
 import zlib from 'zlib'
 import ipRangeCheck from 'ip-range-check'
 
-import {publishNotification, s3} from './utils.mjs'
+import {publishNotification, s3} from './utils.js'
 
 const acceptableIpRanges = process.env.IP_RANGES.split(',')
 

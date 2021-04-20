@@ -4,7 +4,8 @@ reports/
 tmp/
 .env
 .cdk.staging
-cdk.out
+aws/environment-setup/cdk.out/*
+!aws/environment-setup/cdk.out/package.json
 cdk.tmp/
 
 .vscode/launch.json

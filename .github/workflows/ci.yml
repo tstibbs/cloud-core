@@ -7,10 +7,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: aws/environment-setup/parent-account/functions
-
     steps:
 
     - uses: actions/checkout@v2
@@ -23,19 +19,19 @@ jobs:
       run: npm install -g npm@latest
     - name: Install node dependencies
       run: npm install -g aws-cdk
+    - name: Set up environment
+      run: mkdir cdk.tmp
+      working-directory: aws/environment-setup
+    - name: Set up test environment
+      run: cp dummy.env .env
+      working-directory: aws/environment-setup
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-    - name: Install python dependencies
-      run: pip install cfn-lint
-      
     - run: npm ci
       working-directory: aws/utils
     - run: npm ci
-    - run: npm run build
-    - run: cp dummy.env .env
+      working-directory: aws/environment-setup
+    - run: npm run testsynth
+      working-directory: aws/environment-setup
     - run: npm run test
-    - run: npm run package
+      working-directory: aws/environment-setup
     # don't run the actual deploy in the CI, but run everything up to here to get the best idea of whether it works

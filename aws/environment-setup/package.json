@@ -1,0 +1,38 @@
+{
+	"name": "@tstibbs/cloud-core-stacks",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"aws-sdk": "^2.888.0",
+		"dotenv": "^8.2.0",
+		"exponential-backoff": "^3.1.0",
+		"ip-range-check": "^0.2.0",
+		"lodash": "^4.17.21"
+	},
+	"devDependencies": {
+		"@aws-cdk/aws-budgets": "^1.94.1",
+		"@aws-cdk/aws-config": "^1.94.1",
+		"@aws-cdk/aws-events": "^1.94.1",
+		"@aws-cdk/aws-events-targets": "^1.94.1",
+		"@aws-cdk/aws-iam": "^1.94.1",
+		"@aws-cdk/aws-lambda": "^1.94.1",
+		"@aws-cdk/aws-lambda-nodejs": "^1.94.1",
+		"@aws-cdk/aws-s3": "^1.94.1",
+		"@aws-cdk/aws-s3-notifications": "^1.94.1",
+		"@aws-cdk/aws-sns": "^1.94.1",
+		"@aws-cdk/aws-sns-subscriptions": "^1.94.1",
+		"@aws-cdk/core": "^1.94.1",
+		"@tstibbs/cloud-core-utils": "file:../utils",
+		"aws-cdk": "^1.94.1",
+		"esbuild": "^0.9.6",
+		"jest": "^26.6.3"
+	},
+	"scripts": {
+		"dev": "cdk-tools watch",
+		"test": "cdk-tools testcdk && node test/login-checker-test.js && node test/test-built.js",
+		"testsynth": "cdk-tools testsynth",
+		"dryrun": "cdk-tools dryrun",
+		"deploy": "cdk-tools deploy",
+		"everything": "npm run test && npm run testsynth && npm run deploy"
+	}
+}
