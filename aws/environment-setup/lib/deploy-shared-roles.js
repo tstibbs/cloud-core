@@ -8,8 +8,8 @@ const eu12Condition = {
 	}
 }
 
-export function buildDevApiLimitedPolicy(scope) {
-	return new iam.ManagedPolicy(scope, 'devApiLimitedPolicy', {
+export function buildDevApiLimitedPolicies(scope) {
+	let devApiLimitedPolicy = new iam.ManagedPolicy(scope, 'devApiLimitedPolicy', {
 		description: `Sensible permissive policy for a developer but which _doesn't_ allow access to IAM.`,
 		statements: [
 			new iam.PolicyStatement({
@@ -30,7 +30,11 @@ export function buildDevApiLimitedPolicy(scope) {
 					'ses:*',
 					'sns:*',
 					'sqs:*',
-					'ssm:*'
+					'ssm:*',
+					'config:BatchGet*',
+					'config:Describe*',
+					'config:Get*',
+					'config:List*'
 				],
 				resources: ['*'],
 				conditions: eu12Condition
@@ -71,6 +75,8 @@ export function buildDevApiLimitedPolicy(scope) {
 			})
 		]
 	})
+	let budgetsReadOnly = iam.ManagedPolicy.fromAwsManagedPolicyName('AWSBudgetsReadOnlyAccess')
+	return [devApiLimitedPolicy, budgetsReadOnly]
 }
 
 export function buildCloudFormationInvokerPolicy(scope) {

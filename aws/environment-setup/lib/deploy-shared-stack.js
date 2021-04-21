@@ -1,7 +1,7 @@
 import cdk from '@aws-cdk/core'
 import iam from '@aws-cdk/aws-iam'
 import {
-	buildDevApiLimitedPolicy,
+	buildDevApiLimitedPolicies,
 	buildCloudFormationInvokerPolicy,
 	buildCloudFormationInvokerLimitedPolicy,
 	buildScoutSuitePolicy
@@ -12,15 +12,15 @@ import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 class AllAccountsStack extends cdk.Stack {
 	constructor(scope, id, props) {
 		super(scope, id, props)
-		let devApiLimitedPolicy = buildDevApiLimitedPolicy(this)
+		let devApiLimitedPolicies = buildDevApiLimitedPolicies(this)
 		let cloudFormationInvokerPolicy = buildCloudFormationInvokerPolicy(this)
-		createCliRoles(this, devApiLimitedPolicy, cloudFormationInvokerPolicy)
-		createCloudformationElements(this, devApiLimitedPolicy, cloudFormationInvokerPolicy)
+		createCliRoles(this, devApiLimitedPolicies, cloudFormationInvokerPolicy)
+		createCloudformationElements(this, devApiLimitedPolicies, cloudFormationInvokerPolicy)
 		createScoutSuiteElements(this)
 	}
 }
 
-function createCliRoles(scope, devApiLimitedPolicy, cloudFormationInvokerPolicy) {
+function createCliRoles(scope, devApiLimitedPolicies, cloudFormationInvokerPolicy) {
 	let devApiIamPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName('IAMFullAccess')
 
 	new iam.Role(scope, 'parentAccountCliRole', {
@@ -29,20 +29,21 @@ function createCliRoles(scope, devApiLimitedPolicy, cloudFormationInvokerPolicy)
 			new iam.ServicePrincipal('cloudformation.amazonaws.com', {
 				assumeRoleAction: 'sts:AssumeRole'
 			}),
+			//Note that if the parent account core stack is dropped and recreated, this trust relationship will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
 			new iam.ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:user/AllAccountCliEntryUser`)
 		),
-		managedPolicies: [devApiIamPolicy, devApiLimitedPolicy, cloudFormationInvokerPolicy]
+		managedPolicies: [devApiIamPolicy, ...devApiLimitedPolicies, cloudFormationInvokerPolicy]
 	})
 }
 
-function createCloudformationElements(scope, devApiLimitedPolicy, cloudFormationInvokerPolicy) {
+function createCloudformationElements(scope, devApiLimitedPolicies, cloudFormationInvokerPolicy) {
 	//it's important that this policy does not have write permissions to IAM
 	let cloudFormationServiceRole = new iam.Role(scope, 'cloudFormationServiceRole', {
 		roleName: 'CloudFormationServiceRole',
 		assumedBy: new iam.ServicePrincipal('cloudformation.amazonaws.com', {
 			assumeRoleAction: 'sts:AssumeRole'
 		}),
-		managedPolicies: [devApiLimitedPolicy]
+		managedPolicies: devApiLimitedPolicies
 	})
 
 	let cloudFormationInvokerLimitedPolicy = buildCloudFormationInvokerLimitedPolicy(scope, cloudFormationServiceRole)
@@ -60,7 +61,7 @@ function createScoutSuiteElements(scope) {
 	let scoutSuitePolicy = buildScoutSuitePolicy(scope)
 	new iam.Role(scope, 'scoutSuiteRole', {
 		roleName: 'ScoutSuiteRole',
-		//Note that if the parent account stack is dropped and recreated, this trust relationship will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
+		//Note that if the parent account core stack is dropped and recreated, this trust relationship will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
 		assumedBy: new iam.ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:user/AllAccountCliEntryUser`),
 		managedPolicies: [scoutSuitePolicy]
 	})
