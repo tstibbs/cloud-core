@@ -4,6 +4,8 @@ import iam from '@aws-cdk/aws-iam'
 import config from '@aws-cdk/aws-config'
 import eventsTargets from '@aws-cdk/aws-events-targets'
 import events from '@aws-cdk/aws-events'
+import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
+
 const {EventField, Rule, RuleTargetInput} = events
 
 function buildConfigPlatform(scope) {
@@ -46,7 +48,7 @@ function buildConfigPlatform(scope) {
 	let configurationRecorder = new config.CfnConfigurationRecorder(scope, 'configurationRecorder', {
 		roleArn: `arn:aws:iam::${scope.account}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig`,
 		recordingGroup: {
-			resourceTypes: ['AWS::IAM::User']
+			resourceTypes: ['AWS::IAM::User', 'AWS::CloudFormation::Stack']
 		}
 	})
 	configurationRecorder.addDependsOn(configServiceRole)
@@ -63,6 +65,7 @@ function buildConfigPlatform(scope) {
 
 function buildConfigRules(scope, configurationRecorder) {
 	let rules = [
+		//iam
 		new config.ManagedRule(scope, 'ruleIamRootAccessKeyCheck', {
 			identifier: config.ManagedRuleIdentifiers.IAM_ROOT_ACCESS_KEY_CHECK
 		}),
@@ -82,6 +85,13 @@ function buildConfigRules(scope, configurationRecorder) {
 			identifier: config.ManagedRuleIdentifiers.IAM_USER_UNUSED_CREDENTIALS_CHECK,
 			inputParameters: {
 				maxCredentialUsageAge: 2
+			}
+		}),
+		//cloudformation
+		new config.ManagedRule(scope, 'cloudformationStackDriftDetectionCheck', {
+			identifier: config.ManagedRuleIdentifiers.CLOUDFORMATION_STACK_DRIFT_DETECTION_CHECK,
+			inputParameters: {
+				cloudformationRoleArn: `arn:aws:iam::${scope.account}:user/${PARENT_ACCNT_CLI_ROLE_NAME}` //TODO not sure how this will work when we change to track resources accross the organisation?
 			}
 		})
 	]
