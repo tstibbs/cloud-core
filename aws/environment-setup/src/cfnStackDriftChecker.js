@@ -98,7 +98,7 @@ async function checkOneAccount(accountId) {
 	if (failures.length > 0) {
 		console.log(`Retrying: ${accountId} / ${stacks}`)
 		await sleep(30 * 1000) // most common cause of failure is rate exceeded, so try again with a smaller set
-		let data2 = await inSeries(failures, async stack => await checkOneStack(cloudformation, stack))
+		let data2 = await inSeries(failures, async failure => await checkOneStack(cloudformation, failure.stackName))
 		data = [...data, ...data2]
 	}
 	data.forEach(result => (result.stackName = `${accountId}/${result.stackName}`))
@@ -117,6 +117,17 @@ async function inSeries(things, executor) {
 
 export async function handleEvent(event, context) {
 	let invocationId = context.awsRequestId
+	try {
+		await runAllChecks(invocationId)
+	} catch (e) {
+		console.error(e)
+		console.log('publishing sns alert for error')
+		let message = 'Error occured checking for drift: \n' + e.stack + '\n' + JSON.stringify(e.originalError, null, 2)
+		await publishNotification(message, 'AWS account cloud-formation alert', invocationId)
+	}
+}
+
+export async function runAllChecks(invocationId) {
 	console.log(`invocationId=${invocationId}`) //just to make it easy to match up an email and a log entry
 
 	let allAcountsData = await inSeries(childAccounts, async childAccount => await checkOneAccount(childAccount))
