@@ -189,5 +189,3 @@ function assertNotPaging(response) {
 }
 
 export const handler = handleEvent
-
-// await handleEvent({}, {awsRequestId:'dummy'})
