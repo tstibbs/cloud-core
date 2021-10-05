@@ -29,8 +29,9 @@ function createCliRoles(scope, devApiLimitedPolicies, cloudFormationInvokerPolic
 			new iam.ServicePrincipal('cloudformation.amazonaws.com', {
 				assumeRoleAction: 'sts:AssumeRole'
 			}),
-			//Note that if the parent account core stack is dropped and recreated, this trust relationship will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
-			new iam.ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:user/AllAccountCliEntryUser`)
+			//Note that if the parent account core stack is dropped and recreated, these trust relationships will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
+			new iam.ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:user/AllAccountCliEntryUser`),
+			new iam.ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:role/toolingFunctionsRole`)
 		),
 		managedPolicies: [devApiIamPolicy, ...devApiLimitedPolicies, cloudFormationInvokerPolicy]
 	})

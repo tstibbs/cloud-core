@@ -2,7 +2,6 @@ import cdk from '@aws-cdk/core'
 import iam from '@aws-cdk/aws-iam'
 
 import {CHILD_ACCOUNTS} from './deploy-envs.js'
-const childAccounts = CHILD_ACCOUNTS.split(',')
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 
 class ParentAccountCoreStack extends cdk.Stack {
@@ -19,7 +18,7 @@ class ParentAccountCoreStack extends cdk.Stack {
 			statements: [
 				new iam.PolicyStatement({
 					actions: ['sts:AssumeRole'],
-					resources: childAccounts.map(account => `arn:aws:iam::${account}:role/OrganizationAccountAccessRole`)
+					resources: CHILD_ACCOUNTS.map(account => `arn:aws:iam::${account}:role/OrganizationAccountAccessRole`)
 				})
 			]
 		})
@@ -41,12 +40,12 @@ class ParentAccountCoreStack extends cdk.Stack {
 				// admin permissions on each child account
 				new iam.PolicyStatement({
 					actions: ['sts:AssumeRole'],
-					resources: childAccounts.map(account => `arn:aws:iam::${account}:role/${PARENT_ACCNT_CLI_ROLE_NAME}`)
+					resources: CHILD_ACCOUNTS.map(account => `arn:aws:iam::${account}:role/${PARENT_ACCNT_CLI_ROLE_NAME}`)
 				}),
 				// scout-suite checking permissions on each child account
 				new iam.PolicyStatement({
 					actions: ['sts:AssumeRole'],
-					resources: childAccounts.map(account => `arn:aws:iam::${account}:role/ScoutSuiteRole`)
+					resources: CHILD_ACCOUNTS.map(account => `arn:aws:iam::${account}:role/ScoutSuiteRole`)
 				})
 			]
 		})
