@@ -120,7 +120,8 @@ export function buildCloudFormationInvokerLimitedPolicy(scope, cloudFormationSer
 					'cloudformation:CreateStack',
 					'cloudformation:CreateStackSet',
 					'cloudformation:UpdateStack',
-					'cloudformation:UpdateStackSet'
+					'cloudformation:UpdateStackSet',
+					'cloudformation:DeleteChangeSet'
 				],
 				resources: ['*'],
 				conditions: {
@@ -189,7 +190,6 @@ export function buildCloudFormationInvokerLimitedPolicy(scope, cloudFormationSer
 				//...except for some things you probably won't want to do through the api (and could be dangerous) or allow a remote user to do - note these shouldn't be declared above but are explicitly denied for safety
 				effect: iam.Effect.DENY,
 				actions: [
-					'cloudformation:DeleteChangeSet',
 					'cloudformation:DeleteStack',
 					'cloudformation:DeleteStackInstances',
 					'cloudformation:DeleteStackSet',
