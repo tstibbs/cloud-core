@@ -5,7 +5,7 @@ import lambda from '@aws-cdk/aws-lambda'
 import events from '@aws-cdk/aws-events'
 import eventsTargets from '@aws-cdk/aws-events-targets'
 
-import {CHILD_ACCOUNTS} from './deploy-envs.js'
+import {CHILD_ACCOUNTS, MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 
 function createLambda(scope, notificationTopic) {
@@ -44,10 +44,27 @@ function createLambda(scope, notificationTopic) {
 		role: toolingFunctionsRole
 	})
 
-	new events.Rule(scope, 'driftCheckerFunctionSchedule', {
+	let iamCheckerFunction = new nodejsLambda.NodejsFunction(scope, 'iamCheckerFunction', {
+		entry: 'src/iam-checker.js',
+		environment: {
+			ALERTS_TOPIC: notificationTopic.topicArn,
+			CHILD_ACCOUNTS: CHILD_ACCOUNTS.join(','),
+			MAX_CREDENTIAL_AGE,
+			MAX_UNUSED_CREDENTIAL_DAYS
+		},
+		memorySize: 128,
+		timeout: cdk.Duration.minutes(1),
+		runtime: lambda.Runtime.NODEJS_14_X,
+		role: toolingFunctionsRole
+	})
+
+	new events.Rule(scope, 'toolingFunctionSchedule', {
 		schedule: events.Schedule.cron({minute: '0', hour: '0'}),
 		targets: [
 			new eventsTargets.LambdaFunction(driftCheckerFunction, {
+				retryAttempts: 2
+			}),
+			new eventsTargets.LambdaFunction(iamCheckerFunction, {
 				retryAttempts: 2
 			})
 		]

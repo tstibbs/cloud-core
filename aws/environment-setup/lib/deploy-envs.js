@@ -9,7 +9,15 @@ if (STACK_NAME == null || STACK_NAME.length == 0) {
 }
 export {STACK_NAME}
 
-export const {NOTIFICATION_EMAIL, BUDGET, IP_RANGES, PARENT_ACCOUNT_ID, ORG_ID} = process.env
+export const {
+	NOTIFICATION_EMAIL,
+	BUDGET,
+	IP_RANGES,
+	PARENT_ACCOUNT_ID,
+	ORG_ID,
+	MAX_CREDENTIAL_AGE,
+	MAX_UNUSED_CREDENTIAL_DAYS
+} = process.env
 
 async function getRevision() {
 	let output = await exec('git rev-parse --verify HEAD')
