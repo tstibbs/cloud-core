@@ -1,43 +1,46 @@
-import {iam} from './utils.js'
+import {buildApiForAccount, publishNotification, buildHandler} from './utils.js'
 import csvParse from 'csv-parse/lib/sync.js'
 
 const dayInMillis = 24 * 60 * 60 * 1000
 
-async function runChecks() {
+async function checkOneAccount(accountId) {
 	const issues = []
 	const now = Date.now()
 	const maxCredentialAge = process.env.MAX_CREDENTIAL_AGE //in days
 	const maxUnusedCredentialDays = process.env.MAX_UNUSED_CREDENTIAL_DAYS //in days
 
-	await iam.generateCredentialReport().promise()
-	let response = await iam.getCredentialReport().promise()
-	let csv = response.Content.toString()
-	const data = csvParse(csv, {
-		columns: true
-	})
-	console.log(data)
-	let rootUsers = data.filter(entry => entry.user == '<root_account>')
-	let nonRootUsers = data.filter(entry => entry.user != '<root_account>')
-	if (rootUsers.length <= 0) {
-		assert('rootUsers', 'length', '> 0', rootUsers.length)
-	}
-	if (rootUsers.length + nonRootUsers.length != data.length) {
-		assert('all users', 'count', 'data.length', rootUsers.length + nonRootUsers.length)
-	}
+	async function runChecks() {
+		const iam = await buildApiForAccount(accountId, 'IAM')
 
-	// Check root user doesn't have any access keys
-	noRootAccessKeys(rootUsers)
-	// Check root user has MFA enabled
-	rootMfaEnabled(rootUsers)
-	// check MFA enabled for all users with console access
-	consoleUsersMfaEnabled(nonRootUsers)
-	// Check no access keys older than x days and no credentials that have been unused for x days
-	checkCredentials(nonRootUsers)
-	console.log(issues)
+		await iam.generateCredentialReport().promise()
+		let response = await iam.getCredentialReport().promise()
+		let csv = response.Content.toString()
+		const data = csvParse(csv, {
+			columns: true
+		})
+		console.log(data)
+		let rootUsers = data.filter(entry => entry.user == '<root_account>')
+		let nonRootUsers = data.filter(entry => entry.user != '<root_account>')
+		if (rootUsers.length <= 0) {
+			assert('rootUsers', 'length', '> 0', rootUsers.length)
+		}
+		if (rootUsers.length + nonRootUsers.length != data.length) {
+			assert('all users', 'count', 'data.length', rootUsers.length + nonRootUsers.length)
+		}
+
+		// Check root user doesn't have any access keys
+		noRootAccessKeys(rootUsers)
+		// Check root user has MFA enabled
+		rootMfaEnabled(rootUsers)
+		// check MFA enabled for all users with console access
+		consoleUsersMfaEnabled(nonRootUsers)
+		// Check no access keys older than x days and no credentials that have been unused for x days
+		checkCredentials(nonRootUsers)
+	}
 
 	function assert(resource, attribute, expected, actual) {
 		if (expected !== actual) {
-			issues.push(`${resource}.${attribute} should be '${expected}' but was '${actual}'`)
+			issues.push(`${accountId}: ${resource}.${attribute} should be '${expected}' but was '${actual}'`)
 		}
 	}
 
@@ -82,6 +85,21 @@ async function runChecks() {
 			assert(user.arn, attribute, `less than ${maxDiff} days ago`, diff)
 		}
 	}
+
+	await runChecks()
+	return issues
 }
 
-export const handler = runChecks
+async function summarise(invocationId, allAcountsData) {
+	let allIssues = allAcountsData.flat()
+	console.log(`allIssues: ${JSON.stringify(allIssues, null, 2)}`)
+	if (allIssues.length == 0) {
+		console.log(`No issues found across any accounts.`)
+	} else {
+		console.log('Some issues found')
+		let message = `IAM issues found:\n\n` + allIssues.join('\n')
+		await publishNotification(message, 'AWS account iam alert', invocationId)
+	}
+}
+
+export const handler = buildHandler(checkOneAccount, summarise)

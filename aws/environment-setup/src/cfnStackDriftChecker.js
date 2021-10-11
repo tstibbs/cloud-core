@@ -3,9 +3,7 @@ import _ from 'lodash'
 import assert from 'assert'
 import backOff from 'exponential-backoff'
 
-import {publishNotification, buildCfnForAccount} from './utils.js'
-
-const childAccounts = process.env.CHILD_ACCOUNTS.split(',')
+import {publishNotification, buildApiForAccount, assertNotPaging, inSeries, buildHandler} from './utils.js'
 
 const sleep = util.promisify(setTimeout)
 
@@ -84,7 +82,7 @@ async function checkOneStack(cloudformation, stackName) {
 }
 
 async function checkOneAccount(accountId) {
-	let cloudformation = await buildCfnForAccount(accountId)
+	let cloudformation = await buildApiForAccount(accountId, 'CloudFormation')
 	let stackResponse = await cloudformation.listStacks({}).promise()
 	let stacks = stackResponse.StackSummaries.filter(summary => !/^DELETE.*/.test(summary.StackStatus)).map(
 		summary => summary.StackName
@@ -105,33 +103,7 @@ async function checkOneAccount(accountId) {
 	return data
 }
 
-async function inSeries(things, executor) {
-	//run in series not in parallel to avoid the rate limiting kicking in
-	let all = []
-	for (let thing of things) {
-		let data = await executor(thing)
-		all.push(data)
-	}
-	return all
-}
-
-export async function handleEvent(event, context) {
-	let invocationId = context.awsRequestId
-	try {
-		await runAllChecks(invocationId)
-	} catch (e) {
-		console.error(e)
-		console.log('publishing sns alert for error')
-		let message = 'Error occured checking for drift: \n' + e.stack + '\n' + JSON.stringify(e.originalError, null, 2)
-		await publishNotification(message, 'AWS account cloud-formation alert', invocationId)
-	}
-}
-
-export async function runAllChecks(invocationId) {
-	console.log(`invocationId=${invocationId}`) //just to make it easy to match up an email and a log entry
-
-	let allAcountsData = await inSeries(childAccounts, async childAccount => await checkOneAccount(childAccount))
-
+async function summarise(invocationId, allAcountsData) {
 	let data = {
 		//set some defaults to simplify processing
 		[driftStatusInSync]: [],
@@ -183,9 +155,4 @@ export async function runAllChecks(invocationId) {
 	}
 }
 
-function assertNotPaging(response) {
-	//haven't bothered to implement paging of responses, so just check that there isn't any paging required
-	assert.ok(response.NextToken == undefined) //docs say 'null' but library actually seems to be 'undefined'
-}
-
-export const handler = handleEvent
+export const handler = buildHandler(checkOneAccount, summarise)
