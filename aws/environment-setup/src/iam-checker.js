@@ -1,5 +1,6 @@
 import {buildApiForAccount, publishNotification, buildHandler} from './utils.js'
 import csvParse from 'csv-parse/lib/sync.js'
+import backOff from 'exponential-backoff'
 
 const dayInMillis = 24 * 60 * 60 * 1000
 
@@ -8,12 +9,11 @@ async function checkOneAccount(accountId) {
 	const now = Date.now()
 	const maxCredentialAge = process.env.MAX_CREDENTIAL_AGE //in days
 	const maxUnusedCredentialDays = process.env.MAX_UNUSED_CREDENTIAL_DAYS //in days
+	const iam = await buildApiForAccount(accountId, 'IAM')
 
 	async function runChecks() {
-		const iam = await buildApiForAccount(accountId, 'IAM')
-
 		await iam.generateCredentialReport().promise()
-		let response = await iam.getCredentialReport().promise()
+		let response = await getCredentialReport()
 		let csv = response.Content.toString()
 		const data = csvParse(csv, {
 			columns: true
@@ -84,6 +84,16 @@ async function checkOneAccount(accountId) {
 		if (isNaN(diff) || diff >= maxDiff) {
 			assert(user.arn, attribute, `less than ${maxDiff} days ago`, diff)
 		}
+	}
+
+	async function getCredentialReport() {
+		const backoffParams = {
+			maxDelay: 60 * 1000, // 1 minute
+			startingDelay: 10 * 1000 // 10 seconds
+		}
+		//if not ready, `iam.getCredentialReport()` will throw an error with a 'ReportInProgress' code which will cause the backoff to happen anyway
+		let credentialReport = await backOff.backOff(() => iam.getCredentialReport().promise(), backoffParams)
+		return credentialReport
 	}
 
 	await runChecks()
