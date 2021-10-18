@@ -8,4 +8,4 @@ let parentAccountCoreStack = buildParentAccountCoreStack()
 await validateCdkAssets(parentAccountCoreStack.stackName, 0)
 
 let parentAccountInfraStack = buildParentAccountInfraStack()
-await validateCdkAssets(parentAccountInfraStack.stackName, 2)
+await validateCdkAssets(parentAccountInfraStack.stackName, 4) //s3 bucket emptier + cloudformation drift checker + login checker + iam permissions checker
