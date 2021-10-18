@@ -12,8 +12,8 @@ async function checkOneAccount(accountId) {
 	const iam = await buildApiForAccount(accountId, 'IAM')
 
 	async function runChecks() {
-		await iam.generateCredentialReport().promise()
-		let response = await getCredentialReport()
+		await doWithBackoff(iam.generateCredentialReport)
+		let response = await doWithBackoff(iam.getCredentialReport)
 		let csv = response.Content.toString()
 		const data = csvParse(csv, {
 			columns: true
@@ -86,14 +86,14 @@ async function checkOneAccount(accountId) {
 		}
 	}
 
-	async function getCredentialReport() {
+	async function doWithBackoff(delegate) {
 		const backoffParams = {
-			maxDelay: 60 * 1000, // 1 minute
-			startingDelay: 10 * 1000 // 10 seconds
+			maxDelay: 65 * 1000, // 1 minute, 5 seconds
+			startingDelay: 4 * 1000 // 10 seconds
 		}
 		//if not ready, `iam.getCredentialReport()` will throw an error with a 'ReportInProgress' code which will cause the backoff to happen anyway
-		let credentialReport = await backOff.backOff(() => iam.getCredentialReport().promise(), backoffParams)
-		return credentialReport
+		let result = await backOff.backOff(() => delegate.bind(iam)().promise(), backoffParams)
+		return result
 	}
 
 	await runChecks()
