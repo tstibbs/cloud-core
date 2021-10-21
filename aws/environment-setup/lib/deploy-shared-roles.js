@@ -21,6 +21,7 @@ export function buildDevApiLimitedPolicies(scope) {
 					'cloudwatch:*',
 					'dax:*',
 					'dynamodb:*',
+					'ecr:*',
 					'events:*',
 					'kinesis:*',
 					'kms:*',
