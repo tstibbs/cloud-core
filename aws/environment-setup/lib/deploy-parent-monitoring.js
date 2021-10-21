@@ -4,13 +4,13 @@ import iam from '@aws-cdk/aws-iam'
 import s3n from '@aws-cdk/aws-s3-notifications'
 import nodejsLambda from '@aws-cdk/aws-lambda-nodejs'
 import lambda from '@aws-cdk/aws-lambda'
-import {IP_RANGES, PARENT_ACCOUNT_ID, ORG_ID} from './deploy-envs.js'
+import {RAW_IP_RANGES, PARENT_ACCOUNT_ID, ORG_ID} from './deploy-envs.js'
 
 function createLambda(scope, notificationTopic, cloudTrailLogsBucket) {
 	const loginMonitorFunction = new nodejsLambda.NodejsFunction(scope, 'loginMonitorFunction', {
 		entry: 'src/loginChecker.js',
 		environment: {
-			IP_RANGES,
+			IP_RANGES: RAW_IP_RANGES,
 			ALERTS_TOPIC: notificationTopic.topicArn
 		},
 		memorySize: 128,

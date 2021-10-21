@@ -1,10 +1,11 @@
 import 'dotenv/config.js'
 import assert from 'assert'
 
+import {ALERTS_TOPIC, CHILD_ACCOUNTS} from './runtime-envs.js'
 import {aws, assumeRole} from './auth-utils.js'
 
-const alertsTopic = process.env.ALERTS_TOPIC //needs to be full arn
-const childAccounts = process.env.CHILD_ACCOUNTS.split(',')
+const alertsTopic = ALERTS_TOPIC //needs to be full arn
+const childAccounts = CHILD_ACCOUNTS
 
 const sns = new aws.SNS()
 const s3 = new aws.S3()

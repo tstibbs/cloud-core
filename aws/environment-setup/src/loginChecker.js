@@ -2,9 +2,10 @@ import util from 'util'
 import zlib from 'zlib'
 import ipRangeCheck from 'ip-range-check'
 
+import {IP_RANGES} from './runtime-envs.js'
 import {publishNotification, s3} from './utils.js'
 
-const acceptableIpRanges = process.env.IP_RANGES.split(',')
+const acceptableIpRanges = IP_RANGES
 
 const gunzip = util.promisify(zlib.gunzip)
 

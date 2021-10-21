@@ -1,23 +1,12 @@
-import dotenv from 'dotenv'
+export * from '../src/runtime-envs.js'
 
 import {exec} from '@tstibbs/cloud-core-utils'
 
-dotenv.config()
 let {STACK_NAME} = process.env
 if (STACK_NAME == null || STACK_NAME.length == 0) {
 	STACK_NAME = 'Default'
 }
 export {STACK_NAME}
-
-export const {
-	NOTIFICATION_EMAIL,
-	BUDGET,
-	IP_RANGES,
-	PARENT_ACCOUNT_ID,
-	ORG_ID,
-	MAX_CREDENTIAL_AGE,
-	MAX_UNUSED_CREDENTIAL_DAYS
-} = process.env
 
 async function getRevision() {
 	let output = await exec('git rev-parse --verify HEAD')
@@ -25,5 +14,3 @@ async function getRevision() {
 }
 
 export const REVISION = await getRevision()
-
-export const CHILD_ACCOUNTS = process.env.CHILD_ACCOUNTS.split(',')

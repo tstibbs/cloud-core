@@ -5,7 +5,7 @@ import lambda from '@aws-cdk/aws-lambda'
 import events from '@aws-cdk/aws-events'
 import eventsTargets from '@aws-cdk/aws-events-targets'
 
-import {CHILD_ACCOUNTS, MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './deploy-envs.js'
+import {CHILD_ACCOUNTS, RAW_CHILD_ACCOUNTS, MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 
 function createLambda(scope, notificationTopic) {
@@ -36,7 +36,7 @@ function createLambda(scope, notificationTopic) {
 		entry: 'src/cfnStackDriftChecker.js',
 		environment: {
 			ALERTS_TOPIC: notificationTopic.topicArn,
-			CHILD_ACCOUNTS: CHILD_ACCOUNTS.join(',')
+			CHILD_ACCOUNTS: RAW_CHILD_ACCOUNTS
 		},
 		memorySize: 128,
 		timeout: cdk.Duration.minutes(5),
@@ -48,7 +48,7 @@ function createLambda(scope, notificationTopic) {
 		entry: 'src/iam-checker.js',
 		environment: {
 			ALERTS_TOPIC: notificationTopic.topicArn,
-			CHILD_ACCOUNTS: CHILD_ACCOUNTS.join(','),
+			CHILD_ACCOUNTS: RAW_CHILD_ACCOUNTS,
 			MAX_CREDENTIAL_AGE,
 			MAX_UNUSED_CREDENTIAL_DAYS
 		},

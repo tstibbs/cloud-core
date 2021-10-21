@@ -1,14 +1,16 @@
-import {buildApiForAccount, publishNotification, buildHandler} from './utils.js'
 import csvParse from 'csv-parse/lib/sync.js'
 import backOff from 'exponential-backoff'
+
+import {MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './runtime-envs'
+import {buildApiForAccount, publishNotification, buildHandler} from './utils.js'
 
 const dayInMillis = 24 * 60 * 60 * 1000
 
 async function checkOneAccount(accountId) {
 	const issues = []
 	const now = Date.now()
-	const maxCredentialAge = process.env.MAX_CREDENTIAL_AGE //in days
-	const maxUnusedCredentialDays = process.env.MAX_UNUSED_CREDENTIAL_DAYS //in days
+	const maxCredentialAge = MAX_CREDENTIAL_AGE //in days
+	const maxUnusedCredentialDays = MAX_UNUSED_CREDENTIAL_DAYS //in days
 	const iam = await buildApiForAccount(accountId, 'IAM')
 
 	async function runChecks() {
