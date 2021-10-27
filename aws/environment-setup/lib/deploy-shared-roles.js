@@ -2,15 +2,17 @@ import iam from '@aws-cdk/aws-iam'
 
 /* This file just contains roles with lots of actions, to prevent the large text blocks making it hard to read the main stack file */
 
+const bootstrapQualifier = 'hnb659fds' // this is the default value, unlikely to need to change it (hence the hard-coding) but pulled out to make it easy to change if necessary
 const eu12Condition = {
 	StringEquals: {
 		'aws:RequestedRegion': ['eu-west-1', 'eu-west-2']
 	}
 }
 
-export function buildDevApiLimitedPolicies(scope) {
-	let devApiLimitedPolicy = new iam.ManagedPolicy(scope, 'devApiLimitedPolicy', {
-		description: `Sensible permissive policy for a developer but which _doesn't_ allow access to IAM.`,
+export function buildDeveloperPolicy(scope) {
+	return new iam.ManagedPolicy(scope, 'developerPolicy', {
+		managedPolicyName: 'developerPolicy',
+		description: `Sensible permissive policy for a developer, including IAM access.`,
 		statements: [
 			new iam.PolicyStatement({
 				//allow certain approved services, but only on specific approved regions
@@ -32,10 +34,14 @@ export function buildDevApiLimitedPolicies(scope) {
 					'sns:*',
 					'sqs:*',
 					'ssm:*',
+					//read only access to config, somewhat different to arn:aws:iam::aws:policy/AWSConfigUserAccess for reasons I don't necessarily understand
 					'config:BatchGet*',
 					'config:Describe*',
 					'config:Get*',
-					'config:List*'
+					'config:List*',
+					//read only access to budgets, copied from arn:aws:iam::aws:policy/AWSBudgetsReadOnlyAccess just so we have a single policy we can reference in the bootstrap command
+					'budgets:ViewBudget',
+					'budgets:Describe*'
 				],
 				resources: ['*'],
 				conditions: eu12Condition
@@ -46,38 +52,12 @@ export function buildDevApiLimitedPolicies(scope) {
 					'cloudfront:*',
 					'route53:*',
 					'support:*',
-					//only iam read access here
-					'iam:GetGroup',
-					'iam:GetGroupPolicy',
-					'iam:GetPolicy',
-					'iam:GetPolicyVersion',
-					'iam:GetRole',
-					'iam:GetRolePolicy',
-					'iam:GetUser',
-					'iam:GetUserPolicy',
-					'iam:ListAttachedGroupPolicies',
-					'iam:ListAttachedRolePolicies',
-					'iam:ListAttachedUserPolicies',
-					'iam:ListEntitiesForPolicy',
-					'iam:ListGroupPolicies',
-					'iam:ListGroups',
-					'iam:ListGroupsForUser',
-					'iam:ListPolicies',
-					'iam:ListPoliciesGrantingServiceAccess',
-					'iam:ListPolicyVersions',
-					'iam:ListRolePolicies',
-					'iam:ListRoleTags',
-					'iam:ListRoles',
-					'iam:ListUserPolicies',
-					'iam:ListUserTags',
-					'iam:ListUsers'
+					'iam:*'
 				],
 				resources: ['*']
 			})
 		]
 	})
-	let budgetsReadOnly = iam.ManagedPolicy.fromAwsManagedPolicyName('AWSBudgetsReadOnlyAccess')
-	return [devApiLimitedPolicy, budgetsReadOnly]
 }
 
 export function buildCloudFormationInvokerPolicy(scope) {
@@ -88,115 +68,12 @@ export function buildCloudFormationInvokerPolicy(scope) {
 				//can assume the various CDK roles
 				actions: ['sts:AssumeRole'],
 				resources: [
-					`arn:aws:iam::${scope.account}:role/cdk-hnb659fds-file-publishing-role-${scope.account}-${scope.region}`,
-					`arn:aws:iam::${scope.account}:role/cdk-hnb659fds-image-publishing-role-${scope.account}-${scope.region}`
+					`arn:aws:iam::${scope.account}:role/cdk-${bootstrapQualifier}-file-publishing-role-${scope.account}-${scope.region}`,
+					`arn:aws:iam::${scope.account}:role/cdk-${bootstrapQualifier}-image-publishing-role-${scope.account}-${scope.region}`,
+					`arn:aws:iam::${scope.account}:role/cdk-${bootstrapQualifier}-lookup-role-${scope.account}-${scope.region}`,
+					`arn:aws:iam::${scope.account}:role/cdk-${bootstrapQualifier}-deploy-role-${scope.account}-${scope.region}`
 				],
 				conditions: eu12Condition
-			})
-		]
-	})
-}
-
-export function buildCloudFormationInvokerLimitedPolicy(scope, cloudFormationServiceRole) {
-	return new iam.ManagedPolicy(scope, 'cloudFormationInvokerLimitedPolicy', {
-		description: 'Minimum policy to actually invoke a cloudformation stack deploy.',
-		statements: [
-			new iam.PolicyStatement({
-				//can read from S3 (needed for the invoker to check what assets are staged in s3)
-				actions: ['s3:Get*', 's3:List*'],
-				resources: [`arn:aws:s3:::cdk-hnb659fds-assets-${scope.account}-eu-west-2`],
-				conditions: eu12Condition
-			}),
-			new iam.PolicyStatement({
-				//can pass the service role to cloudformation
-				actions: ['iam:PassRole'],
-				resources: [cloudFormationServiceRole.roleArn],
-				conditions: eu12Condition
-			}),
-			new iam.PolicyStatement({
-				//can invoke cloudformation itself - WRITE actions
-				actions: [
-					'cloudformation:ContinueUpdateRollback',
-					'cloudformation:CreateChangeSet',
-					'cloudformation:CreateStack',
-					'cloudformation:CreateStackSet',
-					'cloudformation:UpdateStack',
-					'cloudformation:UpdateStackSet',
-					'cloudformation:DeleteChangeSet'
-				],
-				resources: ['*'],
-				conditions: {
-					StringEquals: {
-						...eu12Condition.StringEquals,
-						//prevent the user using any other role for running cloudformation - IAM permissions are denied elsewhere to prevent changing this policy
-						'cloudformation:RoleArn': [cloudFormationServiceRole.roleArn]
-					}
-				}
-			}),
-			new iam.PolicyStatement({
-				//can invoke cloudformation itself - READ(ish) actions
-				actions: [
-					'cloudformation:CancelUpdateStack',
-					'cloudformation:CreateStackInstances',
-					'cloudformation:DeregisterType',
-					'cloudformation:DescribeAccountLimits',
-					'cloudformation:DescribeChangeSet',
-					'cloudformation:DescribeStackDriftDetectionStatus',
-					'cloudformation:DescribeStackEvents',
-					'cloudformation:DescribeStackInstance',
-					'cloudformation:DescribeStackResource',
-					'cloudformation:DescribeStackResourceDrifts',
-					'cloudformation:DescribeStackResources',
-					'cloudformation:DescribeStackSet',
-					'cloudformation:DescribeStackSetOperation',
-					'cloudformation:DescribeStacks',
-					'cloudformation:DescribeType',
-					'cloudformation:DescribeTypeRegistration',
-					'cloudformation:DetectStackDrift',
-					'cloudformation:DetectStackResourceDrift',
-					'cloudformation:DetectStackSetDrift',
-					'cloudformation:EstimateTemplateCost',
-					'cloudformation:ExecuteChangeSet',
-					'cloudformation:GetStackPolicy',
-					'cloudformation:GetTemplate',
-					'cloudformation:GetTemplateSummary',
-					'cloudformation:ListChangeSets',
-					'cloudformation:ListExports',
-					'cloudformation:ListImports',
-					'cloudformation:ListStackInstances',
-					'cloudformation:ListStackResources',
-					'cloudformation:ListStackSetOperationResults',
-					'cloudformation:ListStackSetOperations',
-					'cloudformation:ListStackSets',
-					'cloudformation:ListStacks',
-					'cloudformation:ListTypeRegistrations',
-					'cloudformation:ListTypeVersions',
-					'cloudformation:ListTypes',
-					'cloudformation:RegisterType',
-					'cloudformation:SetTypeDefaultVersion',
-					'cloudformation:SignalResource',
-					'cloudformation:StopStackSetOperation',
-					'cloudformation:TagResource',
-					'cloudformation:UntagResource',
-					'cloudformation:UpdateStackInstances',
-					'cloudformation:UpdateTerminationProtection',
-					'cloudformation:ValidateTemplate',
-					'cloudformation:DeleteChangeSet',
-					'ssm:GetParameter'
-				],
-				resources: ['*'],
-				conditions: eu12Condition
-			}),
-			new iam.PolicyStatement({
-				//...except for some things you probably won't want to do through the api (and could be dangerous) or allow a remote user to do - note these shouldn't be declared above but are explicitly denied for safety
-				effect: iam.Effect.DENY,
-				actions: [
-					'cloudformation:DeleteStack',
-					'cloudformation:DeleteStackInstances',
-					'cloudformation:DeleteStackSet',
-					'cloudformation:SetStackPolicy'
-				],
-				resources: ['*']
 			})
 		]
 	})

@@ -1,28 +1,20 @@
 import cdk from '@aws-cdk/core'
 import iam from '@aws-cdk/aws-iam'
-import {
-	buildDevApiLimitedPolicies,
-	buildCloudFormationInvokerPolicy,
-	buildCloudFormationInvokerLimitedPolicy,
-	buildScoutSuitePolicy
-} from './deploy-shared-roles.js'
+import {buildDeveloperPolicy, buildCloudFormationInvokerPolicy, buildScoutSuitePolicy} from './deploy-shared-roles.js'
 import {PARENT_ACCOUNT_ID} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 
 class AllAccountsStack extends cdk.Stack {
 	constructor(scope, id, props) {
 		super(scope, id, props)
-		let devApiLimitedPolicies = buildDevApiLimitedPolicies(this)
-		let cloudFormationInvokerPolicy = buildCloudFormationInvokerPolicy(this)
-		createCliRoles(this, devApiLimitedPolicies, cloudFormationInvokerPolicy)
-		createCloudformationElements(this, devApiLimitedPolicies, cloudFormationInvokerPolicy)
+		createCliRoles(this)
 		createScoutSuiteElements(this)
 	}
 }
 
-function createCliRoles(scope, devApiLimitedPolicies, cloudFormationInvokerPolicy) {
-	let devApiIamPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName('IAMFullAccess')
-
+function createCliRoles(scope) {
+	let developerPolicy = buildDeveloperPolicy(scope)
+	let cloudFormationInvokerPolicy = buildCloudFormationInvokerPolicy(scope)
 	new iam.Role(scope, 'parentAccountCliRole', {
 		roleName: PARENT_ACCNT_CLI_ROLE_NAME,
 		assumedBy: new iam.CompositePrincipal(
@@ -33,29 +25,8 @@ function createCliRoles(scope, devApiLimitedPolicies, cloudFormationInvokerPolic
 			new iam.ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:user/AllAccountCliEntryUser`),
 			new iam.ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:role/toolingFunctionsRole`)
 		),
-		managedPolicies: [devApiIamPolicy, ...devApiLimitedPolicies, cloudFormationInvokerPolicy]
+		managedPolicies: [developerPolicy, cloudFormationInvokerPolicy]
 	})
-}
-
-function createCloudformationElements(scope, devApiLimitedPolicies, cloudFormationInvokerPolicy) {
-	//it's important that this policy does not have write permissions to IAM
-	let cloudFormationServiceRole = new iam.Role(scope, 'cloudFormationServiceRole', {
-		roleName: 'CloudFormationServiceRole',
-		assumedBy: new iam.ServicePrincipal('cloudformation.amazonaws.com', {
-			assumeRoleAction: 'sts:AssumeRole'
-		}),
-		managedPolicies: devApiLimitedPolicies
-	})
-
-	let cloudFormationInvokerLimitedPolicy = buildCloudFormationInvokerLimitedPolicy(scope, cloudFormationServiceRole)
-	let cloudFormationInvokerGroup = new iam.Group(scope, 'cloudFormationInvokerGroup', {
-		managedPolicies: [cloudFormationInvokerPolicy, cloudFormationInvokerLimitedPolicy]
-	})
-
-	let cloudFormationInvokerUser = new iam.User(scope, 'cloudFormationInvokerUser', {
-		userName: 'CloudFormationInvokerUser'
-	})
-	cloudFormationInvokerUser.addToGroup(cloudFormationInvokerGroup)
 }
 
 function createScoutSuiteElements(scope) {
