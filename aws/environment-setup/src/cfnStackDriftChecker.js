@@ -4,6 +4,7 @@ import assert from 'assert'
 import backOff from 'exponential-backoff'
 
 import {publishNotification, buildApiForAccount, assertNotPaging, inSeries, buildHandler} from './utils.js'
+import {diffsAreAcceptable} from './drift-exclusions.js'
 
 const sleep = util.promisify(setTimeout)
 
@@ -61,13 +62,7 @@ async function checkOneStack(cloudformation, stackName) {
 				.promise()
 			console.log(JSON.stringify(resourceDrifts, null, 2))
 			assertNotPaging(resourceDrifts)
-			//if the only diffs are APIs and the only diffs are empty bodies, then ignore
-			let diffsAreAcceptable = resourceDrifts.StackResourceDrifts.every(
-				drift =>
-					drift.ResourceType == 'AWS::ApiGatewayV2::Api' &&
-					drift.PropertyDifferences.every(diff => diff.PropertyPath == '/Body' && diff.ActualValue == 'null')
-			)
-			if (diffsAreAcceptable) {
+			if (diffsAreAcceptable(resourceDrifts.StackResourceDrifts)) {
 				driftStatus = driftStatusInSync
 			}
 		}
