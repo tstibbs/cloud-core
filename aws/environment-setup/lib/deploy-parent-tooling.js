@@ -62,10 +62,10 @@ function createLambda(scope, notificationTopic) {
 		schedule: events.Schedule.cron({minute: '0', hour: '0'}),
 		targets: [
 			new eventsTargets.LambdaFunction(driftCheckerFunction, {
-				retryAttempts: 2
+				retryAttempts: 1
 			}),
 			new eventsTargets.LambdaFunction(iamCheckerFunction, {
-				retryAttempts: 2
+				retryAttempts: 1
 			})
 		]
 	})
