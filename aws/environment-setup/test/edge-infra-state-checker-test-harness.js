@@ -2,8 +2,9 @@ import assert from 'assert'
 import {aws} from '../src/auth-utils.js'
 import {CURRENT_ACCOUNT, TABLE_NAME} from '../lib/deploy-envs.js'
 import {assumeRole} from '../src/auth-utils.js'
-import {INFRA_TRACKING_SCHEMA} from '../src/constants.js'
-const {PK, SK} = INFRA_TRACKING_SCHEMA
+import {INFRA_TRACKING_SCHEMA} from '../../../edge/infra-tracking/app/constants.js'
+import {writeItemEntry} from '../../../edge/infra-tracking/app/utils.js'
+const {PK} = INFRA_TRACKING_SCHEMA
 const dayInMillis = 24 * 60 * 60 * 1000
 const testPk = 'test-device-001'
 const dynamoDb = new aws.DynamoDB()
@@ -29,24 +30,7 @@ assert.strictEqual(
 await deleteItem()
 
 async function writeItem(timestamp) {
-	let params = {
-		ExpressionAttributeNames: {
-			'#date': SK.name
-		},
-		ExpressionAttributeValues: {
-			':date': {
-				[SK.type]: `${timestamp}`
-			}
-		},
-		Key: {
-			[PK.name]: {
-				[PK.type]: testPk
-			}
-		},
-		TableName: TABLE_NAME,
-		UpdateExpression: 'SET #date = :date'
-	}
-	await dynamoDb.updateItem(params).promise()
+	await writeItemEntry(dynamoDb, TABLE_NAME, testPk, timestamp)
 }
 
 async function deleteItem() {

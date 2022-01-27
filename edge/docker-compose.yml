@@ -1,0 +1,22 @@
+version: "3.7"
+
+services:
+  app:
+    image: "infra-tracking:latest"
+    build: ./infra-tracking/
+    restart: on-failure
+    secrets:
+      - aws_credentials
+    environment:
+      - AWS_CREDENTIALS_FILE=/run/secrets/aws_credentials
+      # also set the following in .env
+      # DEVICE_ID
+      # TABLE_NAME
+    # optional testing command, commented out for production
+    #command: test
+    env_file:
+      - .env
+
+secrets:
+  aws_credentials:
+    file: aws_credentials.json

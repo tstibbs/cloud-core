@@ -6,7 +6,7 @@ import eventsTargets from '@aws-cdk/aws-events-targets'
 import events from '@aws-cdk/aws-events'
 import iam from '@aws-cdk/aws-iam'
 import {buildNotificationChannels, tagAllLambdasWithRevision} from './deploy-shared.js'
-import {INFRA_TRACKING_SCHEMA} from '../src/constants.js'
+import {INFRA_TRACKING_SCHEMA} from '../../../edge/infra-tracking/app/constants.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 
 class InfraTrackingStack extends cdk.Stack {
@@ -52,6 +52,25 @@ class InfraTrackingStack extends cdk.Stack {
 		})
 
 		tagAllLambdasWithRevision(this)
+
+		// let edgeProcessingPolicy = new iam.ManagedPolicy(this, 'edgeProcessingPolicy', {
+		// 	description: 'Policy for edge code to talk to the cloud code',
+		// 	statements: [
+		// 		new iam.PolicyStatement({
+		// 			actions: ['sqs:ReceiveMessage', 'sqs:DeleteMessage'],
+		// 			resources: [cloudToEdgeQueue.queueArn]
+		// 		}),
+		// 		new iam.PolicyStatement({
+		// 			actions: ['lambda:InvokeFunction'],
+		// 			resources: [notificationFunction.functionArn]
+		// 		})
+		// 	]
+		// })
+
+		const edgeProcessingUser = new iam.User(this, 'edgeProcessingUser', {
+			//managedPolicies: [edgeProcessingPolicy]
+		})
+		infraStateTable.grantReadData(edgeProcessingUser)
 	}
 }
 

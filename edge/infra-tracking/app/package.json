@@ -1,0 +1,10 @@
+{
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"aws-sdk": "^2.1010.0"
+	},
+	"scripts": {
+		"test": "AWS_CREDENTIALS_FILE=test/dummy-credentials-file.json node test/test.js"
+	}
+}

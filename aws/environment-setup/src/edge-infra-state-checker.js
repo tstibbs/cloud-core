@@ -1,6 +1,6 @@
 import AWS from 'aws-sdk'
 import 'dotenv/config.js'
-import {INFRA_TRACKING_SCHEMA} from './constants.js'
+import {INFRA_TRACKING_SCHEMA} from '../../../edge/infra-tracking/app/constants.js'
 import {publishNotification} from './utils.js'
 
 const {TABLE_NAME} = process.env
