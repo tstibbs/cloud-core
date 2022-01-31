@@ -1,10 +1,14 @@
 import csvParse from 'csv-parse/lib/sync.js'
 import backOff from 'exponential-backoff'
 
-import {MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './runtime-envs'
+import {MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './runtime-envs.js'
 import {buildApiForAccount, publishNotification, buildHandler} from './utils.js'
+import {MonitorStore} from './monitor-store.js'
 
 const dayInMillis = 24 * 60 * 60 * 1000
+const monitorType = 'iam-checker'
+
+const monitorStore = new MonitorStore(monitorType)
 
 async function checkOneAccount(accountId) {
 	const issues = []
@@ -14,8 +18,8 @@ async function checkOneAccount(accountId) {
 	const iam = await buildApiForAccount(accountId, 'IAM')
 
 	async function runChecks() {
-		await doWithBackoff(iam.generateCredentialReport)
-		let response = await doWithBackoff(iam.getCredentialReport)
+		await doWithBackoff('generateCredentialReport')
+		let response = await doWithBackoff('getCredentialReport')
 		let csv = response.Content.toString()
 		const data = csvParse(csv, {
 			columns: true
@@ -42,7 +46,7 @@ async function checkOneAccount(accountId) {
 
 	function assert(resource, attribute, expected, actual) {
 		if (expected !== actual) {
-			issues.push(`${accountId}: ${resource}.${attribute} should be '${expected}' but was '${actual}'`)
+			issues.push({accountId, resource, attribute, expected, actual})
 		}
 	}
 
@@ -94,7 +98,25 @@ async function checkOneAccount(accountId) {
 			startingDelay: 4 * 1000 // 10 seconds
 		}
 		//if not ready, `iam.getCredentialReport()` will throw an error with a 'ReportInProgress' code which will cause the backoff to happen anyway
-		let result = await backOff.backOff(() => delegate.bind(iam)().promise(), backoffParams)
+		const runDelegate = async () => {
+			try {
+				return await iam[delegate].bind(iam)().promise()
+			} catch (e) {
+				console.error(`error making retryable call for ${delegate}`)
+				console.error(e)
+				throw e
+			}
+		}
+		let result = null
+		try {
+			result = await backOff.backOff(() => {
+				return runDelegate()
+			}, backoffParams)
+		} catch (e) {
+			console.error(`error calling backoff for ${delegate}`)
+			console.error(e)
+			throw e
+		}
 		return result
 	}
 
@@ -102,16 +124,21 @@ async function checkOneAccount(accountId) {
 	return issues
 }
 
+function formatIssues(issues) {
+	return issues.map(
+		issue =>
+			`${issue.accountId}: ${issue.resource}.${issue.attribute} should be '${issue.expected}' but was '${issue.actual}'`
+	)
+}
+
+function addIssuePks(issues) {
+	issues.forEach(issue => (issue.pk = `${issue.accountId}-${issue.resource}-${issue.attribute}-${issue.expected}`))
+}
+
 async function summarise(invocationId, allAcountsData) {
 	let allIssues = allAcountsData.flat()
-	console.log(`allIssues: ${JSON.stringify(allIssues, null, 2)}`)
-	if (allIssues.length == 0) {
-		console.log(`No issues found across any accounts.`)
-	} else {
-		console.log('Some issues found')
-		let message = `IAM issues found:\n\n` + allIssues.join('\n')
-		await publishNotification(message, 'AWS account iam alert', invocationId)
-	}
+	console.log('resolving issues across all accounts')
+	await monitorStore.summariseAndNotify(invocationId, allIssues)
 }
 
 export const handler = buildHandler(checkOneAccount, summarise)

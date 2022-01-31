@@ -10,6 +10,7 @@ const childAccounts = CHILD_ACCOUNTS
 const sns = new aws.SNS()
 const s3 = new aws.S3()
 const iam = new aws.IAM()
+const dydbDocClient = new aws.DynamoDB.DocumentClient()
 
 export function assertNotPaging(response) {
 	//haven't bothered to implement paging of responses, so just check that there isn't any paging required
@@ -42,6 +43,7 @@ export function buildHandler(checkOneAccount, summarise) {
 			console.log('publishing sns alert for error')
 			let message = 'Error occured running tooling: \n' + e.stack + '\n' + JSON.stringify(e.originalError, null, 2)
 			await publishNotification(message, 'AWS account tooling alert', invocationId)
+			throw e //because we want the lambda invocation to be marked as a failure
 		}
 	}
 
@@ -74,4 +76,4 @@ export async function buildApiForAccount(accountId, api) {
 	return cloudformation
 }
 
-export {s3, iam}
+export {s3, iam, dydbDocClient}

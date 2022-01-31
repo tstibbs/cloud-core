@@ -4,9 +4,11 @@ import nodejsLambda from '@aws-cdk/aws-lambda-nodejs'
 import lambda from '@aws-cdk/aws-lambda'
 import events from '@aws-cdk/aws-events'
 import eventsTargets from '@aws-cdk/aws-events-targets'
+import dynamodb from '@aws-cdk/aws-dynamodb'
 
 import {CHILD_ACCOUNTS, RAW_CHILD_ACCOUNTS, MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
+import {MONITOR_STORE_SCHEMA} from '../src/constants.js'
 
 function createLambda(scope, notificationTopic) {
 	const lambdaBasicPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
@@ -44,13 +46,21 @@ function createLambda(scope, notificationTopic) {
 		role: toolingFunctionsRole
 	})
 
+	const monitorStoreTable = new dynamodb.Table(scope, 'monitorStoreTable', {
+		partitionKey: MONITOR_STORE_SCHEMA.PK,
+		billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+		removalPolicy: cdk.RemovalPolicy.DESTROY
+	})
+	monitorStoreTable.grantReadWriteData(toolingFunctionsRole)
+
 	let iamCheckerFunction = new nodejsLambda.NodejsFunction(scope, 'iamCheckerFunction', {
 		entry: 'src/iam-checker.js',
 		environment: {
 			ALERTS_TOPIC: notificationTopic.topicArn,
 			CHILD_ACCOUNTS: RAW_CHILD_ACCOUNTS,
 			MAX_CREDENTIAL_AGE,
-			MAX_UNUSED_CREDENTIAL_DAYS
+			MAX_UNUSED_CREDENTIAL_DAYS,
+			MONITOR_TABLE_NAME: monitorStoreTable.tableName
 		},
 		memorySize: 128,
 		timeout: cdk.Duration.minutes(1),

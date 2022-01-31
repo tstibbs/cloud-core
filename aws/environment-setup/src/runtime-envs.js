@@ -8,7 +8,8 @@ export const {
 	MAX_UNUSED_CREDENTIAL_DAYS,
 	NOTIFICATION_EMAIL,
 	ORG_ID,
-	PARENT_ACCOUNT_ID
+	PARENT_ACCOUNT_ID,
+	MONITOR_TABLE_NAME
 } = process.env
 
 function split(input) {
