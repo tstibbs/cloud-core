@@ -2,13 +2,13 @@ import csvParse from 'csv-parse/lib/sync.js'
 import backOff from 'exponential-backoff'
 
 import {MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './runtime-envs.js'
-import {buildApiForAccount, publishNotification, buildHandler} from './utils.js'
+import {buildApiForAccount, buildMultiAccountLambdaHandler} from './utils.js'
 import {MonitorStore} from './monitor-store.js'
 
 const dayInMillis = 24 * 60 * 60 * 1000
 const monitorType = 'iam-checker'
 
-const monitorStore = new MonitorStore(monitorType)
+const monitorStore = new MonitorStore(monitorType, 'IAM', formatIssues, addIssuePks)
 
 async function checkOneAccount(accountId) {
 	const issues = []
@@ -141,4 +141,4 @@ async function summarise(invocationId, allAcountsData) {
 	await monitorStore.summariseAndNotify(invocationId, allIssues)
 }
 
-export const handler = buildHandler(checkOneAccount, summarise)
+export const handler = buildMultiAccountLambdaHandler(checkOneAccount, summarise)

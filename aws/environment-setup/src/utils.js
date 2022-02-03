@@ -10,6 +10,7 @@ const childAccounts = CHILD_ACCOUNTS
 const sns = new aws.SNS()
 const s3 = new aws.S3()
 const iam = new aws.IAM()
+const iot = new aws.Iot()
 const dydbDocClient = new aws.DynamoDB.DocumentClient()
 
 export function assertNotPaging(response) {
@@ -27,17 +28,22 @@ export async function inSeries(things, executor) {
 	return all
 }
 
-export function buildHandler(checkOneAccount, summarise) {
+export function buildMultiAccountLambdaHandler(checkOneAccount, summarise) {
 	const runAllChecks = async invocationId => {
-		console.log(`invocationId=${invocationId}`) //just to make it easy to match up an email and a log entry
 		let allAcountsData = await inSeries(childAccounts, async childAccount => await checkOneAccount(childAccount))
 		await summarise(invocationId, allAcountsData)
 	}
 
+	const handleEvent = buildSingleAccountLambdaHandler(runAllChecks)
+	return handleEvent
+}
+
+export function buildSingleAccountLambdaHandler(delegate) {
 	const handleEvent = async (event, context) => {
 		let invocationId = context.awsRequestId
+		console.log(`invocationId=${invocationId}`) //just to make it easy to match up an email and a log entry
 		try {
-			await runAllChecks(invocationId)
+			await delegate(invocationId)
 		} catch (e) {
 			console.error(e)
 			console.log('publishing sns alert for error')
@@ -46,7 +52,6 @@ export function buildHandler(checkOneAccount, summarise) {
 			throw e //because we want the lambda invocation to be marked as a failure
 		}
 	}
-
 	return handleEvent
 }
 
@@ -76,4 +81,4 @@ export async function buildApiForAccount(accountId, api) {
 	return cloudformation
 }
 
-export {s3, iam, dydbDocClient}
+export {s3, iam, dydbDocClient, iot}

@@ -1,7 +1,8 @@
 import cdk from '@aws-cdk/core'
-import {ParentAccountCoreStack} from '../lib/deploy-parent-core-stack.js'
-import {ParentAccountInfraStack} from '../lib/deploy-parent-infra-stack.js'
-import {AllAccountsStack} from '../lib/deploy-shared-stack.js'
+import {ParentAccountCoreStack} from './deploy-parent-core-stack.js'
+import {ParentAccountInfraStack} from './deploy-parent-infra-stack.js'
+import {AllAccountsStack} from './deploy-shared-stack.js'
+import {IotStack} from './deploy-iot.js'
 
 const app = new cdk.App()
 
@@ -15,4 +16,8 @@ export function buildParentAccountInfraStack() {
 
 export function buildAllAccountsStack() {
 	return new AllAccountsStack(app, 'AllAccountsStack')
+}
+
+export function buildIotStack() {
+	return new IotStack(app, 'IotStack')
 }

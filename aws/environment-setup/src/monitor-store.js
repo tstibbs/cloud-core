@@ -1,14 +1,17 @@
 import lodash from 'lodash'
 const {difference} = lodash
 
-import {dydbDocClient} from './utils.js'
+import {dydbDocClient, publishNotification} from './utils.js'
 import {MONITOR_TABLE_NAME} from './runtime-envs.js'
 import {MONITOR_STORE_SCHEMA} from './constants.js'
 const {PK, OBJ} = MONITOR_STORE_SCHEMA
 
 export class MonitorStore {
-	constructor(monitorType) {
+	constructor(monitorType, monitorLabel, formatIssues, addIssuePks) {
 		this._monitorTypePrefix = `${monitorType}--`
+		this._monitorLabel = monitorLabel
+		this._formatIssues = formatIssues
+		this._addIssuePks = addIssuePks
 	}
 
 	async _getPreviousIssues() {
@@ -52,7 +55,7 @@ export class MonitorStore {
 		await dydbDocClient.batchWrite(params).promise()
 	}
 
-	async resolveIssues(currentIssues) {
+	async _resolveIssues(currentIssues) {
 		let sunday = new Date().getDay() === 0
 		let previousIssues = await this._getPreviousIssues()
 		let previousPks = previousIssues.map(issue => issue.pk)
@@ -68,6 +71,24 @@ export class MonitorStore {
 			return currentIssues
 		} else {
 			return unreportedIssues
+		}
+	}
+
+	async summariseAndNotify(invocationId, issues) {
+		console.log(`issues: ${JSON.stringify(issues, null, 2)}`)
+		if (issues.length == 0) {
+			console.log(`No issues found.`)
+		} else {
+			console.log('Some issues found')
+			this._addIssuePks(issues)
+			let unreportedIssues = await this._resolveIssues(issues)
+			if (unreportedIssues.length == 0) {
+				console.log(`all ${issues.length} issues previously reported`)
+			} else {
+				console.log(`${unreportedIssues.length}/${issues.length} issues not previously reported`)
+				let message = `${this._monitorLabel} issues found:\n\n` + this._formatIssues(issues).join('\n')
+				await publishNotification(message, `AWS account ${this._monitorLabel} alert`, invocationId)
+			}
 		}
 	}
 }

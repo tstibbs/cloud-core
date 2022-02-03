@@ -10,6 +10,15 @@ import {CHILD_ACCOUNTS, RAW_CHILD_ACCOUNTS, MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDE
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 import {MONITOR_STORE_SCHEMA} from '../src/constants.js'
 
+function buildMonitorStore(stack) {
+	const monitorStoreTable = new dynamodb.Table(stack, 'monitorStoreTable', {
+		partitionKey: MONITOR_STORE_SCHEMA.PK,
+		billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+		removalPolicy: cdk.RemovalPolicy.DESTROY
+	})
+	return monitorStoreTable
+}
+
 function createLambda(scope, notificationTopic) {
 	const lambdaBasicPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
 	const toolingFunctionsPolicy = new iam.ManagedPolicy(scope, 'toolingFunctionsPolicy', {
@@ -46,11 +55,7 @@ function createLambda(scope, notificationTopic) {
 		role: toolingFunctionsRole
 	})
 
-	const monitorStoreTable = new dynamodb.Table(scope, 'monitorStoreTable', {
-		partitionKey: MONITOR_STORE_SCHEMA.PK,
-		billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-		removalPolicy: cdk.RemovalPolicy.DESTROY
-	})
+	let monitorStoreTable = buildMonitorStore(scope)
 	monitorStoreTable.grantReadWriteData(toolingFunctionsRole)
 
 	let iamCheckerFunction = new nodejsLambda.NodejsFunction(scope, 'iamCheckerFunction', {
@@ -84,3 +89,5 @@ function createLambda(scope, notificationTopic) {
 export function buildTooling(scope, notificationTopic) {
 	createLambda(scope, notificationTopic)
 }
+
+export {buildMonitorStore}

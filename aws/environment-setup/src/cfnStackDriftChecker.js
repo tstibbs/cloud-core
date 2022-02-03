@@ -3,7 +3,13 @@ import _ from 'lodash'
 import assert from 'assert'
 import backOff from 'exponential-backoff'
 
-import {publishNotification, buildApiForAccount, assertNotPaging, inSeries, buildHandler} from './utils.js'
+import {
+	publishNotification,
+	buildApiForAccount,
+	assertNotPaging,
+	inSeries,
+	buildMultiAccountLambdaHandler
+} from './utils.js'
 import {diffsAreAcceptable} from './drift-exclusions.js'
 
 const sleep = util.promisify(setTimeout)
@@ -150,4 +156,4 @@ async function summarise(invocationId, allAcountsData) {
 	}
 }
 
-export const handler = buildHandler(checkOneAccount, summarise)
+export const handler = buildMultiAccountLambdaHandler(checkOneAccount, summarise)

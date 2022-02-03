@@ -17,6 +17,7 @@
 		"@aws-cdk/aws-events": "^1.128.0",
 		"@aws-cdk/aws-events-targets": "^1.128.0",
 		"@aws-cdk/aws-iam": "^1.128.0",
+		"@aws-cdk/aws-iot": "^1.128.0",
 		"@aws-cdk/aws-lambda": "^1.128.0",
 		"@aws-cdk/aws-lambda-nodejs": "^1.128.0",
 		"@aws-cdk/aws-s3": "^1.128.0",
