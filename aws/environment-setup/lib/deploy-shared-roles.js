@@ -25,6 +25,7 @@ export function buildDeveloperPolicy(scope) {
 					'dynamodb:*',
 					'ecr:*',
 					'events:*',
+					'iot:*',
 					'kinesis:*',
 					'kms:*',
 					'lambda:*',
