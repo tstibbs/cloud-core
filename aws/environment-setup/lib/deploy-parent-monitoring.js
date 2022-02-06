@@ -6,8 +6,8 @@ import nodejsLambda from '@aws-cdk/aws-lambda-nodejs'
 import lambda from '@aws-cdk/aws-lambda'
 import {RAW_IP_RANGES, PARENT_ACCOUNT_ID, ORG_ID} from './deploy-envs.js'
 
-function createLambda(scope, notificationTopic, cloudTrailLogsBucket) {
-	const loginMonitorFunction = new nodejsLambda.NodejsFunction(scope, 'loginMonitorFunction', {
+function createLambda(stack, notificationTopic, cloudTrailLogsBucket) {
+	const loginMonitorFunction = new nodejsLambda.NodejsFunction(stack, 'loginMonitorFunction', {
 		entry: 'src/loginChecker.js',
 		environment: {
 			IP_RANGES: RAW_IP_RANGES,
@@ -26,8 +26,8 @@ function createLambda(scope, notificationTopic, cloudTrailLogsBucket) {
 	return loginMonitorFunction
 }
 
-function setupCloudTrail(scope) {
-	const cloudTrailLogsBucket = new s3.Bucket(scope, 'cloudTrailLogsBucket', {
+function setupCloudTrail(stack) {
+	const cloudTrailLogsBucket = new s3.Bucket(stack, 'cloudTrailLogsBucket', {
 		removalPolicy: cdk.RemovalPolicy.DESTROY,
 		autoDeleteObjects: true,
 		blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -75,7 +75,7 @@ function setupCloudTrail(scope) {
 	return cloudTrailLogsBucket
 }
 
-export function buildAccountMonitoring(scope, notificationTopic) {
-	let cloudTrailLogsBucket = setupCloudTrail(scope)
-	createLambda(scope, notificationTopic, cloudTrailLogsBucket)
+export function buildAccountMonitoring(stack, notificationTopic) {
+	let cloudTrailLogsBucket = setupCloudTrail(stack)
+	createLambda(stack, notificationTopic, cloudTrailLogsBucket)
 }

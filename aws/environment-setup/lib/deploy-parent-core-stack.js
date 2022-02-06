@@ -11,9 +11,9 @@ class ParentAccountCoreStack extends cdk.Stack {
 		this.createCliUser(this)
 	}
 
-	createConsoleUser(scope) {
+	createConsoleUser(stack) {
 		let thisAccountAdminPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess')
-		let allAccountAdminPolicy = new iam.ManagedPolicy(scope, 'allAccountAdminPolicy', {
+		let allAccountAdminPolicy = new iam.ManagedPolicy(stack, 'allAccountAdminPolicy', {
 			description: 'Gives admin permissions on each child account.',
 			statements: [
 				new iam.PolicyStatement({
@@ -23,18 +23,18 @@ class ParentAccountCoreStack extends cdk.Stack {
 			]
 		})
 
-		let allAccountAdminGroup = new iam.Group(scope, 'allAccountAdminGroup', {
+		let allAccountAdminGroup = new iam.Group(stack, 'allAccountAdminGroup', {
 			managedPolicies: [thisAccountAdminPolicy, allAccountAdminPolicy]
 		})
 
-		let allAccountAdminUser = new iam.User(scope, 'allAccountAdminUser', {
+		let allAccountAdminUser = new iam.User(stack, 'allAccountAdminUser', {
 			userName: 'AllAccountAdminUser'
 		})
 		allAccountAdminUser.addToGroup(allAccountAdminGroup)
 	}
 
-	createCliUser(scope) {
-		let allAccountCliEntryPolicy = new iam.ManagedPolicy(scope, 'allAccountCliEntryPolicy', {
+	createCliUser(stack) {
+		let allAccountCliEntryPolicy = new iam.ManagedPolicy(stack, 'allAccountCliEntryPolicy', {
 			description: 'Allows user to assume admin roles in child accounts.',
 			statements: [
 				// admin permissions on each child account
@@ -50,11 +50,11 @@ class ParentAccountCoreStack extends cdk.Stack {
 			]
 		})
 
-		let allAccountCliEntryGroup = new iam.Group(scope, 'allAccountCliEntryGroup', {
+		let allAccountCliEntryGroup = new iam.Group(stack, 'allAccountCliEntryGroup', {
 			managedPolicies: [allAccountCliEntryPolicy]
 		})
 
-		let allAccountCliEntryUser = new iam.User(scope, 'allAccountCliEntryUser', {
+		let allAccountCliEntryUser = new iam.User(stack, 'allAccountCliEntryUser', {
 			userName: 'AllAccountCliEntryUser'
 		})
 		allAccountCliEntryUser.addToGroup(allAccountCliEntryGroup)

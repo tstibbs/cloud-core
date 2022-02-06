@@ -12,10 +12,10 @@ class AllAccountsStack extends cdk.Stack {
 	}
 }
 
-function createCliRoles(scope) {
-	let developerPolicy = buildDeveloperPolicy(scope)
-	let cloudFormationInvokerPolicy = buildCloudFormationInvokerPolicy(scope)
-	new iam.Role(scope, 'parentAccountCliRole', {
+function createCliRoles(stack) {
+	let developerPolicy = buildDeveloperPolicy(stack)
+	let cloudFormationInvokerPolicy = buildCloudFormationInvokerPolicy(stack)
+	new iam.Role(stack, 'parentAccountCliRole', {
 		roleName: PARENT_ACCNT_CLI_ROLE_NAME,
 		assumedBy: new iam.CompositePrincipal(
 			new iam.ServicePrincipal('cloudformation.amazonaws.com', {
@@ -29,9 +29,9 @@ function createCliRoles(scope) {
 	})
 }
 
-function createScoutSuiteElements(scope) {
-	let scoutSuitePolicy = buildScoutSuitePolicy(scope)
-	new iam.Role(scope, 'scoutSuiteRole', {
+function createScoutSuiteElements(stack) {
+	let scoutSuitePolicy = buildScoutSuitePolicy(stack)
+	new iam.Role(stack, 'scoutSuiteRole', {
 		roleName: 'ScoutSuiteRole',
 		//Note that if the parent account core stack is dropped and recreated, this trust relationship will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
 		assumedBy: new iam.ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:user/AllAccountCliEntryUser`),

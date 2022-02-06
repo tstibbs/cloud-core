@@ -16,8 +16,8 @@ class ParentAccountInfraStack extends cdk.Stack {
 		tagAllLambdasWithRevision(this)
 	}
 
-	createBudgets(scope, notificationTopic) {
-		new budgets.CfnBudget(scope, 'OrganisationBudget', {
+	createBudgets(stack, notificationTopic) {
+		new budgets.CfnBudget(stack, 'OrganisationBudget', {
 			budget: {
 				budgetType: 'COST',
 				timeUnit: 'MONTHLY',

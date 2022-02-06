@@ -9,8 +9,8 @@ const eu12Condition = {
 	}
 }
 
-export function buildDeveloperPolicy(scope) {
-	return new iam.ManagedPolicy(scope, 'developerPolicy', {
+export function buildDeveloperPolicy(stack) {
+	return new iam.ManagedPolicy(stack, 'developerPolicy', {
 		managedPolicyName: 'developerPolicy',
 		description: `Sensible permissive policy for a developer, including IAM access.`,
 		statements: [
@@ -61,18 +61,18 @@ export function buildDeveloperPolicy(scope) {
 	})
 }
 
-export function buildCloudFormationInvokerPolicy(scope) {
-	return new iam.ManagedPolicy(scope, 'cloudFormationInvokerPolicy', {
+export function buildCloudFormationInvokerPolicy(stack) {
+	return new iam.ManagedPolicy(stack, 'cloudFormationInvokerPolicy', {
 		description: 'Gives permission to assume roles required for CDK.',
 		statements: [
 			new iam.PolicyStatement({
 				//can assume the various CDK roles
 				actions: ['sts:AssumeRole'],
 				resources: [
-					`arn:aws:iam::${scope.account}:role/cdk-${bootstrapQualifier}-file-publishing-role-${scope.account}-${scope.region}`,
-					`arn:aws:iam::${scope.account}:role/cdk-${bootstrapQualifier}-image-publishing-role-${scope.account}-${scope.region}`,
-					`arn:aws:iam::${scope.account}:role/cdk-${bootstrapQualifier}-lookup-role-${scope.account}-${scope.region}`,
-					`arn:aws:iam::${scope.account}:role/cdk-${bootstrapQualifier}-deploy-role-${scope.account}-${scope.region}`
+					`arn:aws:iam::${stack.account}:role/cdk-${bootstrapQualifier}-file-publishing-role-${stack.account}-${stack.region}`,
+					`arn:aws:iam::${stack.account}:role/cdk-${bootstrapQualifier}-image-publishing-role-${stack.account}-${stack.region}`,
+					`arn:aws:iam::${stack.account}:role/cdk-${bootstrapQualifier}-lookup-role-${stack.account}-${stack.region}`,
+					`arn:aws:iam::${stack.account}:role/cdk-${bootstrapQualifier}-deploy-role-${stack.account}-${stack.region}`
 				],
 				conditions: eu12Condition
 			})
@@ -80,8 +80,8 @@ export function buildCloudFormationInvokerPolicy(scope) {
 	})
 }
 
-export function buildScoutSuitePolicy(scope) {
-	return new iam.ManagedPolicy(scope, 'scoutSuitePolicy', {
+export function buildScoutSuitePolicy(stack) {
+	return new iam.ManagedPolicy(stack, 'scoutSuitePolicy', {
 		description: 'Minimum policy for scout suite to do its checking.',
 		statements: [
 			new iam.PolicyStatement({

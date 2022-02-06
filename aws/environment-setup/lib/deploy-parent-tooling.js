@@ -19,9 +19,9 @@ function buildMonitorStore(stack) {
 	return monitorStoreTable
 }
 
-function createLambda(scope, notificationTopic) {
+function createLambda(stack, notificationTopic) {
 	const lambdaBasicPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
-	const toolingFunctionsPolicy = new iam.ManagedPolicy(scope, 'toolingFunctionsPolicy', {
+	const toolingFunctionsPolicy = new iam.ManagedPolicy(stack, 'toolingFunctionsPolicy', {
 		description: 'Allows tooling to assume admin roles in child accounts.',
 		statements: [
 			// admin permissions on each child account
@@ -31,19 +31,19 @@ function createLambda(scope, notificationTopic) {
 			})
 		]
 	})
-	const toolingFunctionsRole = new iam.Role(scope, 'toolingFunctionsRole', {
+	const toolingFunctionsRole = new iam.Role(stack, 'toolingFunctionsRole', {
 		roleName: 'toolingFunctionsRole',
 		assumedBy: new iam.CompositePrincipal(
 			new iam.ServicePrincipal('lambda.amazonaws.com', {
 				assumeRoleAction: 'sts:AssumeRole'
 			}),
-			new iam.ArnPrincipal(`arn:aws:iam::${scope.account}:role/${PARENT_ACCNT_CLI_ROLE_NAME}`)
+			new iam.ArnPrincipal(`arn:aws:iam::${stack.account}:role/${PARENT_ACCNT_CLI_ROLE_NAME}`)
 		),
 		managedPolicies: [lambdaBasicPolicy, toolingFunctionsPolicy]
 	})
 	notificationTopic.grantPublish(toolingFunctionsRole)
 
-	let driftCheckerFunction = new nodejsLambda.NodejsFunction(scope, 'driftCheckerFunction', {
+	let driftCheckerFunction = new nodejsLambda.NodejsFunction(stack, 'driftCheckerFunction', {
 		entry: 'src/cfnStackDriftChecker.js',
 		environment: {
 			ALERTS_TOPIC: notificationTopic.topicArn,
@@ -55,10 +55,10 @@ function createLambda(scope, notificationTopic) {
 		role: toolingFunctionsRole
 	})
 
-	let monitorStoreTable = buildMonitorStore(scope)
+	let monitorStoreTable = buildMonitorStore(stack)
 	monitorStoreTable.grantReadWriteData(toolingFunctionsRole)
 
-	let iamCheckerFunction = new nodejsLambda.NodejsFunction(scope, 'iamCheckerFunction', {
+	let iamCheckerFunction = new nodejsLambda.NodejsFunction(stack, 'iamCheckerFunction', {
 		entry: 'src/iam-checker.js',
 		environment: {
 			ALERTS_TOPIC: notificationTopic.topicArn,
@@ -73,7 +73,7 @@ function createLambda(scope, notificationTopic) {
 		role: toolingFunctionsRole
 	})
 
-	new events.Rule(scope, 'toolingFunctionSchedule', {
+	new events.Rule(stack, 'toolingFunctionSchedule', {
 		schedule: events.Schedule.cron({minute: '0', hour: '0'}),
 		targets: [
 			new eventsTargets.LambdaFunction(driftCheckerFunction, {
@@ -86,8 +86,8 @@ function createLambda(scope, notificationTopic) {
 	})
 }
 
-export function buildTooling(scope, notificationTopic) {
-	createLambda(scope, notificationTopic)
+export function buildTooling(stack, notificationTopic) {
+	createLambda(stack, notificationTopic)
 }
 
 export {buildMonitorStore}
