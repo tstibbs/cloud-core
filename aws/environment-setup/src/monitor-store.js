@@ -75,20 +75,15 @@ export class MonitorStore {
 	}
 
 	async summariseAndNotify(invocationId, issues) {
-		console.log(`issues: ${JSON.stringify(issues, null, 2)}`)
-		if (issues.length == 0) {
-			console.log(`No issues found.`)
+		console.log(`${issues.length} issues found: ${JSON.stringify(issues, null, 2)}`)
+		this._addIssuePks(issues)
+		let unreportedIssues = await this._resolveIssues(issues)
+		if (unreportedIssues.length == 0) {
+			console.log(`all ${issues.length} issues previously reported`)
 		} else {
-			console.log('Some issues found')
-			this._addIssuePks(issues)
-			let unreportedIssues = await this._resolveIssues(issues)
-			if (unreportedIssues.length == 0) {
-				console.log(`all ${issues.length} issues previously reported`)
-			} else {
-				console.log(`${unreportedIssues.length}/${issues.length} issues not previously reported`)
-				let message = `${this._monitorLabel} issues found:\n\n` + this._formatIssues(issues).join('\n')
-				await publishNotification(message, `AWS account ${this._monitorLabel} alert`, invocationId)
-			}
+			console.log(`${unreportedIssues.length}/${issues.length} issues not previously reported`)
+			let message = `${this._monitorLabel} issues found:\n\n` + this._formatIssues(issues).join('\n')
+			await publishNotification(message, `AWS account ${this._monitorLabel} alert`, invocationId)
 		}
 	}
 }
