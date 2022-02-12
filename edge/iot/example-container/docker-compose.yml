@@ -1,0 +1,25 @@
+version: "3.7"
+
+services:
+  app:
+    image: "iot-uptime:latest"
+    build: .
+    restart: unless-stopped
+    secrets:
+      - privateKeyPath
+      - clientCertPath
+      - caCertPath
+    environment:
+      - IOT_PRIVATE_KEY_PATH=/run/secrets/privateKeyPath
+      - IOT_CLIENT_CERT_PATH=/run/secrets/clientCertPath
+      - IOT_CA_CERT_PATH=/run/secrets/caCertPath
+    #  - IOT_CLIENT_ID=
+    #  - IOT_HOST=
+
+secrets:
+  privateKeyPath:
+    file: private.pem.key
+  clientCertPath:
+    file: certificate.pem.crt
+  caCertPath:
+    file: AmazonRootCA1.pem
