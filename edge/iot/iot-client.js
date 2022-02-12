@@ -1,7 +1,8 @@
 /* Utility for connecting to IOT */
 
 import 'dotenv/config'
-import {device} from 'aws-iot-device-sdk'
+import awsIotDeviceSdk from 'aws-iot-device-sdk'
+const {device} = awsIotDeviceSdk;
 
 const {
 	IOT_PRIVATE_KEY_PATH, //usually a path to a docker secret
