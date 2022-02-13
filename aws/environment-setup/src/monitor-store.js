@@ -56,7 +56,6 @@ export class MonitorStore {
 	}
 
 	async _resolveIssues(currentIssues) {
-		let sunday = new Date().getDay() === 0
 		let previousIssues = await this._getPreviousIssues()
 		let previousPks = previousIssues.map(issue => issue.pk)
 		let currentPks = currentIssues.map(issue => issue.pk)
@@ -67,22 +66,38 @@ export class MonitorStore {
 		if (unreportedIssues.length > 0 || obseletePks.length > 0) {
 			await this._updateStore(unreportedIssues, obseletePks)
 		}
-		if (sunday) {
-			return currentIssues
+		let fixedIssues = previousIssues.filter(issue => obseletePks.includes(issue.pk))
+		let previouslyReportedIssues = currentIssues.filter(issue => !newPks.includes(issue.pk))
+		return {
+			raised: unreportedIssues,
+			existing: previouslyReportedIssues,
+			fixed: fixedIssues,
+
+		}
+	}
+
+	_formatIssuesForMessage(heading, issues) {
+		if (issues.length > 0) {
+			return `${heading}:\n\n` + this._formatIssues(issues).join('\n') + '\n\n'
 		} else {
-			return unreportedIssues
+			return `No ${heading}.\n\n`
 		}
 	}
 
 	async summariseAndNotify(invocationId, issues) {
+		let sunday = new Date().getDay() === 0
 		console.log(`${issues.length} issues found: ${JSON.stringify(issues, null, 2)}`)
 		this._addIssuePks(issues)
-		let unreportedIssues = await this._resolveIssues(issues)
-		if (unreportedIssues.length == 0) {
+		let {raised, existing, fixed} = await this._resolveIssues(issues)
+
+		if (!sunday && raised.length == 0 && fixed.length == 0) {
 			console.log(`all ${issues.length} issues previously reported`)
 		} else {
-			console.log(`${unreportedIssues.length}/${issues.length} issues not previously reported`)
-			let message = `${this._monitorLabel} issues found:\n\n` + this._formatIssues(issues).join('\n')
+			console.log({raised: raised.length, existing: existing.length, fixed: fixed.length})
+			let message = `${this._monitorLabel} issues found.\n\n`
+				+ this._formatIssuesForMessage('newly raised issues', raised)
+				+ this._formatIssuesForMessage('previously raised issues', existing)
+				+ this._formatIssuesForMessage('issues resolved', fixed)
 			await publishNotification(message, `AWS account ${this._monitorLabel} alert`, invocationId)
 		}
 	}
