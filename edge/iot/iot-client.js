@@ -31,7 +31,7 @@ export function buildIotClient(topics, messageCallback) {
 	//client's policy must have permission to subscribe to the topic
 	topics.forEach(topic => client.subscribe(topic))
 	client.on('message', (topic, payload) => {
-		console.log(`iot:message from ${topic}`, topic, payload.toString())
+		console.log(`iot:message from ${topic}: ${payload}`)
 		messageCallback(topic, payload)
 	})
 }
