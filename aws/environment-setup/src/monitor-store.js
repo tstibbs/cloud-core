@@ -90,15 +90,21 @@ export class MonitorStore {
 		this._addIssuePks(issues)
 		let {raised, existing, fixed} = await this._resolveIssues(issues)
 
-		if (!sunday && raised.length == 0 && fixed.length == 0) {
-			console.log(`all ${issues.length} issues previously reported`)
-		} else {
+		//if sunday, send if we have any issues at all
+		//if not sunday, only send if we have raised or fixed issues
+
+		if (raised.length > 0 || fixed.length > 0 || (existing.length > 0 && sunday)) {
 			console.log({raised: raised.length, existing: existing.length, fixed: fixed.length})
 			let message = `${this._monitorLabel} issues found.\n\n`
 				+ this._formatIssuesForMessage('newly raised issues', raised)
 				+ this._formatIssuesForMessage('previously raised issues', existing)
 				+ this._formatIssuesForMessage('issues resolved', fixed)
 			await publishNotification(message, `AWS account ${this._monitorLabel} alert`, invocationId)
+		} else if (sunday) {
+			console.log('no issues to report at all')
+		} else {
+			//issues is the list of issues we've found today (regardless of whether new or not)
+			console.log(`all ${issues.length} issues previously reported`)
 		}
 	}
 }
