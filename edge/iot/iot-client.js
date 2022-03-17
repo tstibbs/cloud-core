@@ -34,4 +34,8 @@ export function buildIotClient(topics, messageCallback) {
 		console.log(`iot:message from ${topic}: ${payload}`)
 		messageCallback(topic, payload)
 	})
+	return client
 }
+
+//note to recieve a message the policy must have iot:Subscribe on arn...:topicfilter/TOPIC_NAME_HERE and iot:Receive on arn...:topic/TOPIC_NAME_HERE
+//topics should be in the format cmd/home-alarm-notifier/check-devices
