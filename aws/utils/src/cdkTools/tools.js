@@ -86,7 +86,6 @@ export function cli() {
 		.demandCommand(1, 'Please choose a command.')
 		.version(false)
 		.wrap(null)
-		.strictCommands()
 		.fail((msg, err, yargs) => {
 			if (err === undefined) {
 				console.error(yargs.help())
