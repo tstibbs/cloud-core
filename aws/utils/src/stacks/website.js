@@ -21,4 +21,5 @@ export function buildWebsiteResources(stack, bucketResourceName, denyCountries) 
 	const distribution = new Distribution(stack, 'distribution', distributionProps)
 
 	new CfnOutput(stack, 'distributionDomainName', { value: distribution.distributionDomainName })
+	new CfnOutput(stack, 'bucketName', { value: bucket.bucketName })
 }
