@@ -11,16 +11,18 @@
 		"cdk-tools": "./src/cdkTools/cli.js"
 	},
 	"dependencies": {
-		"@aws-cdk/assert": "^1.149.0",
-		"@aws-cdk/aws-cloudfront": "^1.149.0",
-		"@aws-cdk/aws-cloudfront-origins": "^1.149.0",
-		"@aws-cdk/aws-s3": "^1.149.0",
-		"@aws-cdk/core": "^1.149.0",
-		"aws-cdk": "^1.149.0",
-		"aws-sdk": "^2.1010.0",
-		"dotenv": "^10.0.0",
+		"aws-cdk": "^2.27.0",
+		"aws-cdk-lib": "^2.27.0",
+		"aws-sdk": "^2.1150.0",
+		"dotenv": "^16.0.1",
 		"es-main": "^1.0.2",
 		"node-watch-changes": "^2.0.3",
-		"yargs": "^17.2.1"
+		"yargs": "^17.5.1"
+	},
+	"devDependencies": {
+		"recursive-readdir-async": "^1.2.1"
+	},
+	"scripts": {
+		"test": "node test/import-all-files.js"
 	}
 }

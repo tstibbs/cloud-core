@@ -1,4 +1,4 @@
-import assert from 'assert'
+import {strict as assert} from 'assert'
 import {readFile as rawReadFile} from 'fs'
 import {promisify} from 'util'
 import {createRequire} from 'module'
@@ -7,6 +7,7 @@ const require = createRequire(import.meta.url)
 const readFile = promisify(rawReadFile)
 
 export async function validateBuiltAssets(stackName, expectedNumberOfAssets) {
+	console.log(stackName)
 	let assets = JSON.parse(await readFile(`./cdk.out/${stackName}.assets.json`))
 	let zipAssets = Object.values(assets.files)
 		.filter(file => file.source.packaging === 'zip')

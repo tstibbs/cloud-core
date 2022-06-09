@@ -89,10 +89,10 @@ export function cli() {
 		.fail((msg, err, yargs) => {
 			if (err === undefined) {
 				console.error(yargs.help())
-				process.exit(1)
+				process.exitCode = 1
 			} else {
 				if (typeof err === 'number') {
-					process.exit(err)
+					process.exitCode = err
 				} else {
 					if (msg != null) {
 						console.error(msg)
@@ -100,7 +100,7 @@ export function cli() {
 					if (err != null) {
 						console.error(err)
 					}
-					process.exit(1)
+					process.exitCode = 1
 				}
 			}
 		}).argv

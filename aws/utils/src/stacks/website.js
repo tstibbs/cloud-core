@@ -1,7 +1,7 @@
-import { RemovalPolicy, CfnOutput } from '@aws-cdk/core'
-import { Distribution, GeoRestriction, ResponseHeadersPolicy } from '@aws-cdk/aws-cloudfront'
-import { S3Origin } from '@aws-cdk/aws-cloudfront-origins'
-import { Bucket } from '@aws-cdk/aws-s3'
+import { RemovalPolicy, CfnOutput } from 'aws-cdk-lib'
+import { Distribution, GeoRestriction, ResponseHeadersPolicy } from 'aws-cdk-lib/aws-cloudfront'
+import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins'
+import { Bucket } from 'aws-cdk-lib/aws-s3'
 
 export function buildWebsiteResources(stack, bucketResourceName, denyCountries) {
 	const bucket = new Bucket(stack, bucketResourceName, {

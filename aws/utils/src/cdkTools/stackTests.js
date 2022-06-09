@@ -1,8 +1,8 @@
-import assert from '@aws-cdk/assert'
+import {Template} from 'aws-cdk-lib/assertions'
 
 function checkStackClearsUp(synthed) {
-	if (synthed.template.Resources != null) {
-		let resources = Object.entries(synthed.template.Resources)
+	if (synthed.Resources != null) {
+		let resources = Object.entries(synthed.Resources)
 		if (resources.length > 0)
 			describe.each(resources)(`no resources have 'retain' or 'snapshot' deletion policies`, (id, resource) => {
 				test(`'${id}' has empty or 'delete' deletion/replace policy`, () => {
@@ -16,8 +16,8 @@ function checkStackClearsUp(synthed) {
 
 //it's possible to express some things in such a way that they will flag as drift in cloudformation, so we check for known examples of this
 function checkDriftDetectionCompatible(synthed) {
-	if (synthed.template.Resources != null) {
-		let resources = Object.entries(synthed.template.Resources).filter(
+	if (synthed.Resources != null) {
+		let resources = Object.entries(synthed.Resources).filter(
 			([id, resource]) => resource.Type == 'AWS::IAM::ManagedPolicy'
 		)
 		if (resources.length > 0) {
@@ -34,7 +34,13 @@ function checkDriftDetectionCompatible(synthed) {
 }
 
 export function checkAllStackPolicies(stack) {
-	let synthed = assert.SynthUtils.synthesize(stack)
-	checkStackClearsUp(synthed)
-	checkDriftDetectionCompatible(synthed)
+	describe(stack.artifactId, () => {
+		let synthed = Template.fromStack(stack).toJSON()
+		checkStackClearsUp(synthed)
+		checkDriftDetectionCompatible(synthed)
+	})
+}
+
+export function checkAllPoliciesForMultipleStacks(stacks) {
+	stacks.forEach(checkAllStackPolicies)
 }
