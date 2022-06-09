@@ -38,7 +38,7 @@ export class IotStack extends Stack {
 			},
 			memorySize: 128,
 			timeout: Duration.minutes(1),
-			runtime: Runtime.NODEJS_14_X,
+			runtime: Runtime.NODEJS_16_X,
 			initialPolicy: [
 				new PolicyStatement({
 					actions: ['iot:SearchIndex'],
