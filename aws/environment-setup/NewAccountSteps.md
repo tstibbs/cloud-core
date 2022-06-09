@@ -6,7 +6,7 @@ These steps are currently impossible in cloudformation without a lot of hoop jum
 1. Turn on 'block public access' in S3 at the account level (cloudformation issue: https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/168)
 1. Deactivate unused STS regions in IAM / account settings
 1. Create access keys for root
-1. Bootstrap account for CDK (ensuring to use a cdk.json that specifies new-style synthesis) `npx cdk bootstrap --bootstrap-kms-key-id AWS_MANAGED_KEY --profile [aws profile name] aws://[account id]/eu-west-2`
+1. Bootstrap account for CDK `npx cdk bootstrap --bootstrap-kms-key-id AWS_MANAGED_KEY --profile [aws profile name] aws://[account id]/eu-west-2`
 1. Run: `npx cdk deploy AllAccountsStack --profile [aws profile name]`
 1. Verify users have been created by stack
 1. Update bootstap: `npx cdk bootstrap --cloudformation-execution-policies "arn:aws:iam::[account id]:policy/developerPolicy" --bootstrap-kms-key-id AWS_MANAGED_KEY --profile [aws profile name] aws://[account id]/eu-west-2`

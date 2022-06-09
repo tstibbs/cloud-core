@@ -1,9 +1,9 @@
-import cdk from '@aws-cdk/core'
-import s3 from '@aws-cdk/aws-s3'
-import iam from '@aws-cdk/aws-iam'
-import s3n from '@aws-cdk/aws-s3-notifications'
-import nodejsLambda from '@aws-cdk/aws-lambda-nodejs'
-import lambda from '@aws-cdk/aws-lambda'
+import cdk from 'aws-cdk-lib'
+import s3 from 'aws-cdk-lib/aws-s3'
+import iam from 'aws-cdk-lib/aws-iam'
+import s3n from 'aws-cdk-lib/aws-s3-notifications'
+import nodejsLambda from 'aws-cdk-lib/aws-lambda-nodejs'
+import lambda from 'aws-cdk-lib/aws-lambda'
 import {RAW_IP_RANGES, PARENT_ACCOUNT_ID, ORG_ID} from './deploy-envs.js'
 
 function createLambda(stack, notificationTopic, cloudTrailLogsBucket) {

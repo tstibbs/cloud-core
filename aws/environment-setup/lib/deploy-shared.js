@@ -1,6 +1,6 @@
-import cdk from '@aws-cdk/core'
-import sns from '@aws-cdk/aws-sns'
-import snsSubs from '@aws-cdk/aws-sns-subscriptions'
+import cdk from 'aws-cdk-lib'
+import sns from 'aws-cdk-lib/aws-sns'
+import snsSubs from 'aws-cdk-lib/aws-sns-subscriptions'
 
 import {NOTIFICATION_EMAIL, REVISION} from './deploy-envs.js'
 

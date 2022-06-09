@@ -1,4 +1,4 @@
-import iam from '@aws-cdk/aws-iam'
+import iam from 'aws-cdk-lib/aws-iam'
 
 /* This file just contains roles with lots of actions, to prevent the large text blocks making it hard to read the main stack file */
 

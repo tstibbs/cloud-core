@@ -1,5 +1,5 @@
-import cdk from '@aws-cdk/core'
-import iam from '@aws-cdk/aws-iam'
+import cdk from 'aws-cdk-lib'
+import iam from 'aws-cdk-lib/aws-iam'
 import {buildDeveloperPolicy, buildCloudFormationInvokerPolicy, buildScoutSuitePolicy} from './deploy-shared-roles.js'
 import {PARENT_ACCOUNT_ID} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
