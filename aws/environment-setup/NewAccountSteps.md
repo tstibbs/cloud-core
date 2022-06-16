@@ -28,7 +28,7 @@ These steps are currently impossible in cloudformation without a lot of hoop jum
 # Root account only
 
 1. Turn on billing access via IAM - https://console.aws.amazon.com/billing/home?#/account / IAM User and Role Access to Billing Information / Edit / Activate IAM Access / Update
-1. Activate `aws:cloudformation:stack-name` to be a cost allocation tag https://console.aws.amazon.com/billing/home#/tags
+1. Run: `aws ce update-cost-allocation-tags-status --cost-allocation-tags-status TagKey=aws_cloudformation_stack-name,Status=Active`
 1. Run: `aws organizations enable-aws-service-access --service-principal cloudtrail.amazonaws.com`
 1. Run: `aws cloudtrail create-trail --name all-accounts-management-events --s3-bucket-name ${CloudTrailLogsBucket} --is-organization-trail --is-multi-region-trail` ( IsOrganizationTrail not supported by cloudformation yet so have to use cli, see https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/45)
 1. Run: `aws cloudtrail start-logging --name all-accounts-management-events`

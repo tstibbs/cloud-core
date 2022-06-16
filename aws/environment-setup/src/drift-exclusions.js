@@ -22,6 +22,11 @@ function isScheduleRetryPolicy(drift) {
 	)
 }
 
+function isMissingTags(drift) {
+	//tags set in cloudformation are often not detected on the resource by drift detection e.g. https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/901
+	return drift.PropertyDifferences.every(diff => diff.PropertyPath == '/Tags' && diff.ActualValue == 'null')
+}
+
 export function diffsAreAcceptable(drifts) {
-	return drifts.every(drift => isApiGatewayNullBody(drift) || isScheduleRetryPolicy(drift))
+	return drifts.every(drift => isMissingTags(drift) || isApiGatewayNullBody(drift) || isScheduleRetryPolicy(drift))
 }
