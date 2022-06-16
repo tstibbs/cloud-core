@@ -1,9 +1,12 @@
 import cdk from 'aws-cdk-lib'
 import budgets from 'aws-cdk-lib/aws-budgets'
 import iam from 'aws-cdk-lib/aws-iam'
+
+import {applyStandardTags} from '@tstibbs/cloud-core-utils'
+
 import {buildAccountMonitoring} from './deploy-parent-monitoring.js'
 import {buildTooling} from './deploy-parent-tooling.js'
-import {buildNotificationChannels, tagAllLambdasWithRevision} from './deploy-shared.js'
+import {buildNotificationChannels} from './deploy-shared.js'
 import {BUDGET} from './deploy-envs.js'
 
 class ParentAccountInfraStack extends cdk.Stack {
@@ -13,7 +16,7 @@ class ParentAccountInfraStack extends cdk.Stack {
 		buildAccountMonitoring(this, notificationTopic)
 		buildTooling(this, notificationTopic)
 		this.createBudgets(this, notificationTopic)
-		tagAllLambdasWithRevision(this)
+		applyStandardTags(this)
 	}
 
 	createBudgets(stack, notificationTopic) {

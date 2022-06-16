@@ -6,6 +6,8 @@ import {Rule, Schedule} from 'aws-cdk-lib/aws-events'
 import eventsTargets from 'aws-cdk-lib/aws-events-targets'
 import {PolicyStatement} from 'aws-cdk-lib/aws-iam'
 
+import {applyStandardTags} from '@tstibbs/cloud-core-utils'
+
 import {buildMonitorStore} from './deploy-parent-tooling.js'
 import {buildNotificationChannels} from './deploy-shared.js'
 
@@ -57,6 +59,8 @@ export class IotStack extends Stack {
 				})
 			]
 		})
+
+		applyStandardTags(this)
 	}
 }
 

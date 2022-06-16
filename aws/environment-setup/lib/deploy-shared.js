@@ -1,8 +1,6 @@
-import cdk from 'aws-cdk-lib'
 import sns from 'aws-cdk-lib/aws-sns'
 import snsSubs from 'aws-cdk-lib/aws-sns-subscriptions'
-
-import {NOTIFICATION_EMAIL, REVISION} from './deploy-envs.js'
+import {NOTIFICATION_EMAIL} from './deploy-envs.js'
 
 export function buildNotificationChannels(stack) {
 	const notificationTopic = new sns.Topic(stack, 'notificationTopic')
@@ -11,9 +9,3 @@ export function buildNotificationChannels(stack) {
 }
 
 export const PARENT_ACCNT_CLI_ROLE_NAME = 'ParentAccountCliRole'
-
-export function tagAllLambdasWithRevision(stack) {
-	cdk.Tags.of(stack).add('revision', REVISION, {
-		includeResourceTypes: ['AWS::Lambda::Function']
-	})
-}
