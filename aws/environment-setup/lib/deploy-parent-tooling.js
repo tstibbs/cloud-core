@@ -43,20 +43,21 @@ function createLambda(stack, notificationTopic) {
 	})
 	notificationTopic.grantPublish(toolingFunctionsRole)
 
+	let monitorStoreTable = buildMonitorStore(stack)
+	monitorStoreTable.grantReadWriteData(toolingFunctionsRole)
+
 	let driftCheckerFunction = new nodejsLambda.NodejsFunction(stack, 'driftCheckerFunction', {
 		entry: 'src/cfnStackDriftChecker.js',
 		environment: {
 			ALERTS_TOPIC: notificationTopic.topicArn,
-			CHILD_ACCOUNTS: RAW_CHILD_ACCOUNTS
+			CHILD_ACCOUNTS: RAW_CHILD_ACCOUNTS,
+			MONITOR_TABLE_NAME: monitorStoreTable.tableName
 		},
 		memorySize: 128,
 		timeout: cdk.Duration.minutes(5),
 		runtime: lambda.Runtime.NODEJS_16_X,
 		role: toolingFunctionsRole
 	})
-
-	let monitorStoreTable = buildMonitorStore(stack)
-	monitorStoreTable.grantReadWriteData(toolingFunctionsRole)
 
 	let iamCheckerFunction = new nodejsLambda.NodejsFunction(stack, 'iamCheckerFunction', {
 		entry: 'src/iam-checker.js',

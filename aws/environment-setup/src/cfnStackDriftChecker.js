@@ -4,22 +4,33 @@ import assert from 'assert'
 import backOff from 'exponential-backoff'
 
 import {
-	publishNotification,
 	buildApiForAccount,
 	assertNotPaging,
 	inSeries,
 	buildMultiAccountLambdaHandler
 } from './utils.js'
 import {diffsAreAcceptable} from './drift-exclusions.js'
+import {MonitorStore} from './monitor-store.js'
 
 const sleep = util.promisify(setTimeout)
 
 const detectionFailed = 'DETECTION_FAILED'
 const detectionComplete = 'DETECTION_COMPLETE'
-const driftStatusUnknown = 'UNKNOWN'
-const driftStatusUnchecked = 'NOT_CHECKED'
 const driftStatusDrifted = 'DRIFTED'
 const driftStatusInSync = 'IN_SYNC'
+
+const monitorStore = new MonitorStore('cfn-drift-checker', 'CFN-DRIFT', formatIssues, addIssuePks)
+
+function formatIssues(issues) {
+	return issues.map(
+		issue =>
+			`${issue.accountId}: ${issue.stackName} is '${issue.driftStatus}'`
+	)
+}
+
+function addIssuePks(issues) {
+	issues.forEach(issue => (issue.pk = `${issue.accountId}-${issue.stackName}`))
+}
 
 async function checkOneStack(cloudformation, stackName) {
 	let detectResponse = await cloudformation
@@ -100,60 +111,17 @@ async function checkOneAccount(accountId) {
 		let data2 = await inSeries(failures, async failure => await checkOneStack(cloudformation, failure.stackName))
 		data = [...data, ...data2]
 	}
-	data.forEach(result => (result.stackName = `${accountId}/${result.stackName}`))
+	data.forEach(result => (result.accountId = accountId))
 	return data
 }
 
 async function summarise(invocationId, allAcountsData) {
-	let data = {
-		//set some defaults to simplify processing
-		[driftStatusInSync]: [],
-		[driftStatusDrifted]: [],
-		[driftStatusUnknown]: [],
-		[driftStatusUnchecked]: [],
-		[detectionFailed]: [],
-		[undefined]: [],
-		[null]: []
-	}
-	allAcountsData.reduce(
-		(data, oneAccountsData) =>
-			oneAccountsData.reduce((all, stack) => {
-				all[stack.driftStatus] = [...(all[stack.driftStatus] || []), stack.stackName]
-				return all
-			}, data),
-		data
-	)
-	let printableData = JSON.stringify(data, null, 2)
-	console.log(printableData)
-
-	let invalidStacks = [
-		...data[driftStatusUnknown],
-		...data[driftStatusUnchecked],
-		...data[detectionFailed],
-		...data[undefined],
-		...data[null]
-	]
-	let driftedStacks = data[driftStatusDrifted]
-	delete data[driftStatusInSync]
-	delete data[driftStatusDrifted]
-	delete data[driftStatusUnknown]
-	delete data[driftStatusUnchecked]
-	delete data[detectionFailed]
-	delete data[undefined]
-	delete data[null]
-	invalidStacks = invalidStacks.concat.apply(invalidStacks, Object.values(data))
-	if (invalidStacks.length > 0) {
-		console.log('publishing sns alert for error')
-		let message = `Some stacks are in an invalid state:\n${invalidStacks.join(', ')}\n\nall data:\n${printableData}`
-		await publishNotification(message, 'AWS account cloud-formation alert', invocationId)
-	} else if (driftedStacks.length > 0) {
-		console.log('publishing sns alert for drifting')
-		let message = `Some stacks have drifted:\n${driftedStacks.join('\n')}\n\nall data:\n${printableData}}`
-		await publishNotification(message, 'AWS account cloud-formation alert', invocationId)
-	} else {
-		//presumably the rest are all "IN_SYNC"
-		console.log('not publishing alert')
-	}
+	let allIssues = allAcountsData.flat()
+	let inSync = allIssues.filter(issue => issue.driftStatus === driftStatusInSync).map(issue => issue.stackName)
+	let drifted = allIssues.filter(issue => issue.driftStatus !== driftStatusInSync)
+	console.log(['Stacks in sync: ', ...inSync].join('\n'))
+	console.log('resolving issues across all accounts')
+	await monitorStore.summariseAndNotify(invocationId, drifted)
 }
 
 export const handler = buildMultiAccountLambdaHandler(checkOneAccount, summarise)
