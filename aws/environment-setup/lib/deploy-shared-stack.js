@@ -1,8 +1,9 @@
-import {Stack, CfnOutput} from 'aws-cdk-lib'
+import {Stack, CfnOutput, RemovalPolicy} from 'aws-cdk-lib'
 import {Role, CompositePrincipal, ServicePrincipal, ArnPrincipal, ManagedPolicy} from 'aws-cdk-lib/aws-iam'
+import {Bucket} from 'aws-cdk-lib/aws-s3'
 
 import {applyStandardTags} from '@tstibbs/cloud-core-utils'
-import {apiGatewayCloudwatchRoleRef} from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
+import {apiGatewayCloudwatchRoleRef, applicationLogsBucketRef} from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
 
 import {buildDeveloperPolicy, buildCloudFormationInvokerPolicy, buildScoutSuitePolicy} from './deploy-shared-roles.js'
 import {PARENT_ACCOUNT_ID} from './deploy-envs.js'
@@ -53,9 +54,17 @@ function createApplicationDependencies(stack) {
 		}),
 		managedPolicies: [ManagedPolicy.fromAwsManagedPolicyName(`service-role/AmazonAPIGatewayPushToCloudWatchLogs`)]
 	})
+	const applicationLogsBucket = new Bucket(stack, 'applicationLogsBucket', {
+		removalPolicy: RemovalPolicy.DESTROY,
+		autoDeleteObjects: true
+	})
 	new CfnOutput(stack, 'apiGatewayCloudWatchRoleArn', {
 		value: apiGatewayCloudWatchRole.roleArn,
 		exportName: apiGatewayCloudwatchRoleRef
+	})
+	new CfnOutput(stack, 'applicationLogsBucketArn', {
+		value: applicationLogsBucket.bucketArn,
+		exportName: applicationLogsBucketRef
 	})
 }
 
