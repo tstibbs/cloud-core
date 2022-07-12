@@ -30,6 +30,7 @@ function setupCloudTrail(stack) {
 	const cloudTrailLogsBucket = new s3.Bucket(stack, 'cloudTrailLogsBucket', {
 		removalPolicy: cdk.RemovalPolicy.DESTROY,
 		autoDeleteObjects: true,
+		encryption: s3.BucketEncryption.S3_MANAGED,
 		blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
 		lifecycleRules: [
 			{

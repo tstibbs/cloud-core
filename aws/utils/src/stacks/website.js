@@ -1,13 +1,14 @@
 import { RemovalPolicy, CfnOutput, Fn, Aws } from 'aws-cdk-lib'
 import { Distribution, GeoRestriction, ResponseHeadersPolicy } from 'aws-cdk-lib/aws-cloudfront'
 import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins'
-import { Bucket } from 'aws-cdk-lib/aws-s3'
+import { Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3'
 
 import {applicationLogsBucketRef} from './usage-tracking.js'
 
 export function buildWebsiteResources(stack, bucketResourceName, denyCountries) {
 	const websiteBucket = new Bucket(stack, bucketResourceName, {
 		removalPolicy: RemovalPolicy.DESTROY,
+		encryption: BucketEncryption.S3_MANAGED,
 		autoDeleteObjects: true
 	})
 
