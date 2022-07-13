@@ -30,15 +30,15 @@ function checkDriftDetectionCompatible(synthed) {
 }
 
 function checkEncryption(synthed) {
-	let resources = Object.entries(synthed.Resources).filter(
-		([id, resource]) => resource.Type == 'AWS::S3::Bucket'
-	)
+	let resources = Object.entries(synthed.Resources).filter(([id, resource]) => resource.Type == 'AWS::S3::Bucket')
 	if (resources.length > 0) {
 		describe.each(resources)('all buckets have encryption', (id, resource) => {
 			test(`'${id}' has encryption`, () => {
 				let sseConfigs = resource.Properties?.BucketEncryption?.ServerSideEncryptionConfiguration
 				expect(sseConfigs).toBeDefined()
-				expect(sseConfigs.some(sseConfig => sseConfig.ServerSideEncryptionByDefault?.SSEAlgorithm === 'AES256')).toBe(true)
+				expect(sseConfigs.some(sseConfig => sseConfig.ServerSideEncryptionByDefault?.SSEAlgorithm === 'AES256')).toBe(
+					true
+				)
 				//if this fail, adding this is usually sufficient: `encryption: BucketEncryption.S3_MANAGED`
 			})
 		})

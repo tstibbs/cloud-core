@@ -12,5 +12,5 @@ for (let file of files) {
 	console.log(file)
 	await import(file)
 }
-process.exitCode = 0//because cli sets the exit code
-assert.equal(files.length, 7)//sanity check, update if the number of files changes
+process.exitCode = 0 //because cli sets the exit code
+assert.equal(files.length, 7) //sanity check, update if the number of files changes

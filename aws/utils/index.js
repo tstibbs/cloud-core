@@ -4,4 +4,13 @@ import {checkAllStackPolicies, checkAllPoliciesForMultipleStacks} from './src/cd
 import {buildWebsiteResources} from './src/stacks/website.js'
 import {applyStandardTags} from './src/stacks/tags.js'
 
-export {loadEnvs, ifCmd, exec, validateCdkAssets, checkAllStackPolicies, checkAllPoliciesForMultipleStacks, buildWebsiteResources, applyStandardTags}
+export {
+	loadEnvs,
+	ifCmd,
+	exec,
+	validateCdkAssets,
+	checkAllStackPolicies,
+	checkAllPoliciesForMultipleStacks,
+	buildWebsiteResources,
+	applyStandardTags
+}

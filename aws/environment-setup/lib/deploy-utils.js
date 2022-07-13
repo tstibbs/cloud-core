@@ -24,9 +24,9 @@ export function buildIotStack() {
 
 export function buildAllStacks() {
 	return [
-		buildParentAccountCoreStack(),
-		buildParentAccountInfraStack(),
-		buildAllAccountsStack(),
+		buildParentAccountCoreStack(), //
+		buildParentAccountInfraStack(), //
+		buildAllAccountsStack(), //
 		buildIotStack()
 	]
 }

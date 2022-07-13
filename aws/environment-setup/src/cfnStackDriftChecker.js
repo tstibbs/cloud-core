@@ -3,12 +3,7 @@ import _ from 'lodash'
 import assert from 'assert'
 import backOff from 'exponential-backoff'
 
-import {
-	buildApiForAccount,
-	assertNotPaging,
-	inSeries,
-	buildMultiAccountLambdaHandler
-} from './utils.js'
+import {buildApiForAccount, assertNotPaging, inSeries, buildMultiAccountLambdaHandler} from './utils.js'
 import {diffsAreAcceptable} from './drift-exclusions.js'
 import {MonitorStore} from './monitor-store.js'
 
@@ -22,10 +17,7 @@ const driftStatusInSync = 'IN_SYNC'
 const monitorStore = new MonitorStore('cfn-drift-checker', 'CFN-DRIFT', formatIssues, addIssuePks)
 
 function formatIssues(issues) {
-	return issues.map(
-		issue =>
-			`${issue.accountId}: ${issue.stackName} is '${issue.driftStatus}'`
-	)
+	return issues.map(issue => `${issue.accountId}: ${issue.stackName} is '${issue.driftStatus}'`)
 }
 
 function addIssuePks(issues) {

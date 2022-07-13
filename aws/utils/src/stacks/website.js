@@ -1,7 +1,7 @@
-import { RemovalPolicy, CfnOutput, Fn, Aws } from 'aws-cdk-lib'
-import { Distribution, GeoRestriction, ResponseHeadersPolicy } from 'aws-cdk-lib/aws-cloudfront'
-import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins'
-import { Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3'
+import {RemovalPolicy, CfnOutput, Fn, Aws} from 'aws-cdk-lib'
+import {Distribution, GeoRestriction, ResponseHeadersPolicy} from 'aws-cdk-lib/aws-cloudfront'
+import {S3Origin} from 'aws-cdk-lib/aws-cloudfront-origins'
+import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
 
 import {applicationLogsBucketRef} from './usage-tracking.js'
 
@@ -26,6 +26,6 @@ export function buildWebsiteResources(stack, bucketResourceName, denyCountries) 
 	}
 	const distribution = new Distribution(stack, distributionConstructId, distributionProps)
 
-	new CfnOutput(stack, 'distributionDomainName', { value: distribution.distributionDomainName })
-	new CfnOutput(stack, 'bucketName', { value: websiteBucket.bucketName })
+	new CfnOutput(stack, 'distributionDomainName', {value: distribution.distributionDomainName})
+	new CfnOutput(stack, 'bucketName', {value: websiteBucket.bucketName})
 }

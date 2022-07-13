@@ -71,8 +71,7 @@ export class MonitorStore {
 		return {
 			raised: unreportedIssues,
 			existing: previouslyReportedIssues,
-			fixed: fixedIssues,
-
+			fixed: fixedIssues
 		}
 	}
 
@@ -95,10 +94,11 @@ export class MonitorStore {
 
 		if (raised.length > 0 || fixed.length > 0 || (existing.length > 0 && sunday)) {
 			console.log({raised: raised.length, existing: existing.length, fixed: fixed.length})
-			let message = `${this._monitorLabel} issues found.\n\n`
-				+ this._formatIssuesForMessage('newly raised issues', raised)
-				+ this._formatIssuesForMessage('previously raised issues', existing)
-				+ this._formatIssuesForMessage('issues resolved', fixed)
+			let message =
+				`${this._monitorLabel} issues found.\n\n` +
+				this._formatIssuesForMessage('newly raised issues', raised) +
+				this._formatIssuesForMessage('previously raised issues', existing) +
+				this._formatIssuesForMessage('issues resolved', fixed)
 			await publishNotification(message, `AWS account ${this._monitorLabel} alert`, invocationId)
 		} else if (sunday) {
 			console.log('no issues to report at all')

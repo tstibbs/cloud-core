@@ -3,7 +3,10 @@ import {Role, CompositePrincipal, ServicePrincipal, ArnPrincipal, ManagedPolicy}
 import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
 
 import {applyStandardTags} from '@tstibbs/cloud-core-utils'
-import {apiGatewayCloudwatchRoleRef, applicationLogsBucketRef} from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
+import {
+	apiGatewayCloudwatchRoleRef,
+	applicationLogsBucketRef
+} from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
 
 import {buildDeveloperPolicy, buildCloudFormationInvokerPolicy, buildScoutSuitePolicy} from './deploy-shared-roles.js'
 import {PARENT_ACCOUNT_ID} from './deploy-envs.js'

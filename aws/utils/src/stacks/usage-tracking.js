@@ -26,8 +26,8 @@ function buildAccessLogSetting(parent, format) {
 	const logGroup = new LogGroup(stack, `${parentId}-AccessLogs`, {
 		removalPolicy: RemovalPolicy.DESTROY
 	})
-	return  {
+	return {
 		destinationArn: logGroup.logGroupArn,
-		format: format,
+		format: format
 	}
-} 
+}
