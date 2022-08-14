@@ -9,14 +9,17 @@ import {
 } from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
 
 import {buildDeveloperPolicy, buildCloudFormationInvokerPolicy, buildScoutSuitePolicy} from './deploy-shared-roles.js'
+import {createEmergencyInfra} from './deploy-shared-infra.js'
 import {PARENT_ACCOUNT_ID} from './deploy-envs.js'
-import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
+import {PARENT_ACCNT_CLI_ROLE_NAME, buildNotificationChannels} from './deploy-shared.js'
 
 class AllAccountsStack extends Stack {
 	constructor(scope, id, props) {
 		super(scope, id, props)
+		const notificationTopic = buildNotificationChannels(this)
 		createCliRoles(this)
 		createScoutSuiteElements(this)
+		createEmergencyInfra(this, notificationTopic)
 		createApplicationDependencies(this)
 		applyStandardTags(this)
 	}

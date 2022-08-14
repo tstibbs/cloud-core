@@ -7,15 +7,21 @@ import {IotStack} from './deploy-iot.js'
 const app = new cdk.App()
 
 export function buildParentAccountCoreStack() {
-	return new ParentAccountCoreStack(app, 'ParentAccountCoreStack')
+	return new ParentAccountCoreStack(app, 'ParentAccountCoreStack', {
+		terminationProtection: true
+	})
 }
 
 export function buildParentAccountInfraStack() {
-	return new ParentAccountInfraStack(app, 'ParentAccountInfraStack')
+	return new ParentAccountInfraStack(app, 'ParentAccountInfraStack', {
+		terminationProtection: true
+	})
 }
 
 export function buildAllAccountsStack() {
-	return new AllAccountsStack(app, 'AllAccountsStack')
+	return new AllAccountsStack(app, 'AllAccountsStack', {
+		terminationProtection: true
+	})
 }
 
 export function buildIotStack() {

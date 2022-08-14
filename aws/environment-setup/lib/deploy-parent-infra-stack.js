@@ -7,7 +7,7 @@ import {applyStandardTags} from '@tstibbs/cloud-core-utils'
 import {buildAccountMonitoring} from './deploy-parent-monitoring.js'
 import {buildTooling} from './deploy-parent-tooling.js'
 import {buildNotificationChannels} from './deploy-shared.js'
-import {BUDGET} from './deploy-envs.js'
+import {WARNING_BUDGET} from './deploy-envs.js'
 
 class ParentAccountInfraStack extends cdk.Stack {
 	constructor(scope, id, props) {
@@ -25,7 +25,7 @@ class ParentAccountInfraStack extends cdk.Stack {
 				budgetType: 'COST',
 				timeUnit: 'MONTHLY',
 				budgetLimit: {
-					amount: Number.parseFloat(BUDGET),
+					amount: Number.parseFloat(WARNING_BUDGET),
 					unit: 'USD'
 				}
 			},
