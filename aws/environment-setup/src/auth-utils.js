@@ -2,6 +2,7 @@ import aws from 'aws-sdk'
 aws.config.update({region: 'eu-west-2'})
 aws.config.apiVersions = {
 	cloudformation: '2010-05-15',
+	cloudwatchlogs: '2014-03-28',
 	dynamodb: '2012-08-10',
 	iam: '2010-05-08',
 	iot: '2015-05-28',

@@ -11,6 +11,7 @@ const sns = new aws.SNS()
 const s3 = new aws.S3()
 const iam = new aws.IAM()
 const iot = new aws.Iot()
+const cloudWatchLogs = new aws.CloudWatchLogs()
 const dydbDocClient = new aws.DynamoDB.DocumentClient()
 
 export function assertNotPaging(response) {
@@ -81,4 +82,4 @@ export async function buildApiForAccount(accountId, api) {
 	return cloudformation
 }
 
-export {s3, iam, dydbDocClient, iot}
+export {s3, iam, dydbDocClient, iot, cloudWatchLogs}

@@ -22,3 +22,5 @@ export const CHILD_ACCOUNTS = split(RAW_CHILD_ACCOUNTS)
 
 export const RAW_IP_RANGES = process.env.IP_RANGES
 export const IP_RANGES = split(RAW_IP_RANGES)
+
+export const USAGE_MONITOR_EVENT_AGE_DAYS = parseInt(process.env.USAGE_MONITOR_EVENT_AGE_DAYS)
