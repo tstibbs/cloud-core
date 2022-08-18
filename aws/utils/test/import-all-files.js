@@ -13,4 +13,4 @@ for (let file of files) {
 	await import(file)
 }
 process.exitCode = 0 //because cli sets the exit code
-assert.equal(files.length, 7) //sanity check, update if the number of files changes
+assert.equal(files.length, 10) //sanity check, update if the number of files changes

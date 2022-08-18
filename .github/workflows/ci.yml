@@ -28,6 +28,9 @@ jobs:
 
     - run: npm ci
       working-directory: aws/utils
+    - run: npm run test
+      working-directory: aws/utils
+
     - run: npm ci
       working-directory: aws/environment-setup
     - run: npm run testsynth
