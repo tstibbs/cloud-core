@@ -11,11 +11,11 @@
 		"cdk-tools": "./src/cdkTools/cli.js"
 	},
 	"dependencies": {
-		"aws-cdk": "^2.27.0",
-		"aws-cdk-lib": "^2.27.0",
-		"aws-sdk": "^2.1150.0",
+		"aws-cdk": "^2.38.0",
+		"aws-cdk-lib": "^2.38.0",
+		"aws-sdk": "^2.1196.0",
 		"dotenv": "^16.0.1",
-		"es-main": "^1.0.2",
+		"es-main": "^1.2.0",
 		"node-watch-changes": "^2.0.3",
 		"yargs": "^17.5.1"
 	},

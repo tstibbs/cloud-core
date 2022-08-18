@@ -8,7 +8,7 @@
 	],
 	"main": "iot-client.js",
 	"dependencies": {
-		"aws-iot-device-sdk": "^2.2.11",
-		"dotenv": "^16.0.0"
+		"aws-iot-device-sdk": "^2.2.12",
+		"dotenv": "^16.0.1"
 	}
 }
