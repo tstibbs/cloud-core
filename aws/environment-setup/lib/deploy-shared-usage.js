@@ -46,6 +46,7 @@ function createUsageMonitor(stack, notificationTopic) {
 	notificationTopic.grantPublish(usageMonitorFunction)
 	athenaResultsBucket.grantReadWrite(usageMonitorFunction)
 	usageMonitorFunction.role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonS3ReadOnlyAccess')) //to allow querying of abitrary buckets from other stacks
+	usageMonitorFunction.role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('CloudWatchLogsReadOnlyAccess')) //to allow querying of abitrary log groups from other stacks
 }
 
 export {createUsageMonitor}
