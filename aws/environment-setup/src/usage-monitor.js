@@ -2,10 +2,13 @@ import backOff from 'exponential-backoff'
 
 import {cloudWatchLogs, buildSingleAccountLambdaHandler, publishNotification} from './utils.js'
 import {USAGE_MONITOR_EVENT_AGE_DAYS, ATHENA_WORKGROUP_NAME} from './runtime-envs.js'
-import {USAGE_TYPE_LOG_GROUP, USAGE_TYPE_CLOUDFRONT} from '../src/constants.js'
 import {initialiseAthena, queryAthena} from './usage-utils.js'
 import {cloudformation} from './utils.js'
-import {OUTPUT_PREFIX} from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
+import {
+	OUTPUT_PREFIX,
+	USAGE_TYPE_LOG_GROUP,
+	USAGE_TYPE_CLOUDFRONT
+} from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
 
 const QUERY_COMPLETE = 'Complete'
 const QUERY = `fields @timestamp, @message
