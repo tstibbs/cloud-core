@@ -4,6 +4,8 @@ import {cloudWatchLogs, buildSingleAccountLambdaHandler, publishNotification} fr
 import {USAGE_MONITOR_EVENT_AGE_DAYS, ATHENA_WORKGROUP_NAME} from './runtime-envs.js'
 import {USAGE_TYPE_LOG_GROUP, USAGE_TYPE_CLOUDFRONT} from '../src/constants.js'
 import {initialiseAthena, queryAthena} from './usage-utils.js'
+import {cloudformation} from './utils.js'
+import {OUTPUT_PREFIX} from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
 
 const QUERY_COMPLETE = 'Complete'
 const QUERY = `fields @timestamp, @message
@@ -47,6 +49,7 @@ function mapsToArray(arrayOfMaps) {
 }
 
 async function queryLogGroup(dates, stackName, stackResourceName, logGroup) {
+	//supports any HTTP, WebSocket or REST API that has been configured with the log group settings from aws/utils/src/stacks/usage-tracking.js
 	let {queryId} = await cloudWatchLogs
 		.startQuery({
 			queryString: QUERY,
@@ -123,10 +126,19 @@ async function processResources(invocationId, now, stacks) {
 }
 
 async function queryStacks(invocationId) {
-	//get all stack
-	//query for specific output
-	//decode
-	let now = new Date()
+	//get outputs from stacks
+	let listResult = await cloudformation.describeStacks().promise()
+	let stacks = listResult.Stacks.map(stack => {
+		let resources = stack.Outputs.filter(output => output.OutputKey.startsWith(OUTPUT_PREFIX)).map(output =>
+			JSON.parse(output.OutputValue)
+		)
+		return {
+			name: stack.StackName,
+			resources
+		}
+	}).filter(stack => stack.resources.length > 0)
+	console.log(JSON.stringify(stacks, null, 2))
+	const now = new Date()
 	await processResources(invocationId, now, stacks)
 }
 

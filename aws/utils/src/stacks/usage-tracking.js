@@ -3,6 +3,7 @@ import {LogGroup} from 'aws-cdk-lib/aws-logs'
 
 export const apiGatewayCloudwatchRoleRef = `AllAccountsStack-apiGatewayCloudWatchRoleArn`
 export const applicationLogsBucketRef = `AllAccountsStack-applicationLogsBucketArn`
+export const OUTPUT_PREFIX = 'USAGETRACKING'
 
 const standardLogFormat = '$context.identity.sourceIp,$context.httpMethod $context.path,$context.requestId'
 const websocketLogFormat = '$context.identity.sourceIp,$context.eventType $context.routeKey,$context.requestId'

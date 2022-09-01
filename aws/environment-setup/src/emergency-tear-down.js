@@ -1,10 +1,8 @@
 import {strictEqual as assertEqual} from 'assert'
 import backOff from 'exponential-backoff'
 
-import {aws} from './auth-utils.js'
+import {cloudformation} from './utils.js'
 import {publishNotification, buildSingleAccountLambdaHandler} from './utils.js'
-
-const cloudformation = new aws.CloudFormation()
 
 async function destroyStacks(invocationId) {
 	//get list of stacks
