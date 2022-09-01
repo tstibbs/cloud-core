@@ -10,7 +10,8 @@ export const {
 	NOTIFICATION_EMAIL,
 	ORG_ID,
 	PARENT_ACCOUNT_ID,
-	MONITOR_TABLE_NAME
+	MONITOR_TABLE_NAME,
+	ATHENA_WORKGROUP_NAME
 } = process.env
 
 function split(input) {

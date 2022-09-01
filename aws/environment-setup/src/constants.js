@@ -3,3 +3,4 @@ export const MONITOR_STORE_SCHEMA = {
 	OBJ: {name: 'obj', type: 'S'}
 }
 export const USAGE_TYPE_LOG_GROUP = 'LogGroup'
+export const USAGE_TYPE_CLOUDFRONT = 'CloudFront'

@@ -13,4 +13,5 @@ const stacks = [
 		]
 	}
 ]
-await processResources('dummy', stacks)
+const nowDate = new Date('2022-08-25T00:00:00.000Z')
+await processResources('dummy', nowDate, stacks)

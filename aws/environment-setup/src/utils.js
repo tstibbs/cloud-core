@@ -7,6 +7,7 @@ import {aws, assumeRole} from './auth-utils.js'
 const alertsTopic = ALERTS_TOPIC //needs to be full arn
 const childAccounts = CHILD_ACCOUNTS
 
+const athena = new aws.Athena()
 const sns = new aws.SNS()
 const s3 = new aws.S3()
 const iam = new aws.IAM()
@@ -82,4 +83,4 @@ export async function buildApiForAccount(accountId, api) {
 	return cloudformation
 }
 
-export {s3, iam, dydbDocClient, iot, cloudWatchLogs}
+export {s3, iam, dydbDocClient, iot, cloudWatchLogs, athena}
