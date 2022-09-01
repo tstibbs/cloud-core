@@ -68,7 +68,6 @@ async function executeAthenaQuery(sql, workGroupName) {
 	}
 	let startResults = await athena.startQueryExecution(params).promise()
 	let executionId = startResults.QueryExecutionId
-	console.log(executionId)
 
 	//keep checking the status of the query until it's completed
 	const backoffParams = {
@@ -77,6 +76,7 @@ async function executeAthenaQuery(sql, workGroupName) {
 	}
 	const checkForCompletion = async () => {
 		//will throw an error if the results are not ready, causing the backoff to retry
+		console.log(`Checking results of query ${executionId}`)
 		let queryResponse = await athena
 			.getQueryResults({
 				QueryExecutionId: executionId

@@ -5,6 +5,8 @@ import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs'
 import {Runtime} from 'aws-cdk-lib/aws-lambda'
 import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
 
+import {USAGE_MONITOR_EVENT_AGE_DAYS} from './deploy-envs.js'
+
 function createUsageMonitor(stack, notificationTopic) {
 	const athenaResultsBucket = new Bucket(stack, 'athenaResultsBucket', {
 		removalPolicy: RemovalPolicy.DESTROY,
@@ -28,7 +30,8 @@ function createUsageMonitor(stack, notificationTopic) {
 		entry: 'src/usage-monitor.js',
 		environment: {
 			ALERTS_TOPIC: notificationTopic.topicArn,
-			ATHENA_WORKGROUP_NAME: usageMonitorWorkGroup.name
+			ATHENA_WORKGROUP_NAME: usageMonitorWorkGroup.name,
+			USAGE_MONITOR_EVENT_AGE_DAYS: `${USAGE_MONITOR_EVENT_AGE_DAYS}` //will be parsed back in to a number by runtime-envs.js
 		},
 		initialPolicy: [
 			new PolicyStatement({
@@ -41,6 +44,7 @@ function createUsageMonitor(stack, notificationTopic) {
 		runtime: Runtime.NODEJS_16_X
 	})
 	notificationTopic.grantPublish(usageMonitorFunction)
+	athenaResultsBucket.grantReadWrite(usageMonitorFunction)
 	usageMonitorFunction.role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonS3ReadOnlyAccess')) //to allow querying of abitrary buckets from other stacks
 }
 

@@ -116,7 +116,7 @@ async function processResources(invocationId, now, stacks) {
 	}
 	console.log(`publishing sns alert:\n${allResults}`)
 	await publishNotification(
-		`Usage info for the past USAGE_MONITOR_EVENT_AGE_DAYS days:\n\n${allResults}`,
+		`Usage info for the past ${USAGE_MONITOR_EVENT_AGE_DAYS} days:\n\n${allResults}`,
 		'AWS usage info',
 		invocationId
 	)
