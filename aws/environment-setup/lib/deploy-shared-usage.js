@@ -41,7 +41,7 @@ function createUsageMonitor(stack, notificationTopic) {
 				resources: ['*']
 			})
 		],
-		memorySize: 128,
+		memorySize: 512,
 		timeout: Duration.minutes(5),
 		runtime: Runtime.NODEJS_16_X
 	})
