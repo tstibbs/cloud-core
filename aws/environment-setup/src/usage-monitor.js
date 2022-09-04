@@ -37,13 +37,11 @@ async function queryCloudfront(dates, stackName, stackResourceName, bucketName) 
 	await initialiseAthena(tableName, bucketName, stackName, stackResourceName, ATHENA_WORKGROUP_NAME)
 	console.log('table created')
 	let results = await queryAthena(tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
-	let formattedResults = results.ResultSet.Rows.slice(1)
-		.map(({Data}) => {
-			let result = mapsToArray(Data)
-			let [status, date, sourceIp, count] = result
-			return `${stackName}/${stackResourceName} ${date} (${count}): HTTP ${status}, ${sourceIp}`
-		})
-		.join('\n')
+	let formattedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
+		let result = mapsToArray(Data)
+		let [status, date, sourceIp, count] = result
+		return `${stackName}/${stackResourceName} ${date} (${count}): HTTP ${status}, ${sourceIp}`
+	})
 	return formattedResults
 }
 
@@ -80,13 +78,11 @@ async function queryLogGroup(dates, stackName, stackResourceName, logGroup) {
 		}
 	}
 	let results = await backOff.backOff(checkForCompletion, backoffParams)
-	return results
-		.map(fieldsArray => {
-			let result = fieldsArrayToMap(fieldsArray)
-			let {date, count, sourceIp, method, path} = result
-			return `${stackName}/${stackResourceName} ${date} (${count}): ${method} ${path}, ${sourceIp}`
-		})
-		.join('\n')
+	return results.map(fieldsArray => {
+		let result = fieldsArrayToMap(fieldsArray)
+		let {date, count, sourceIp, method, path} = result
+		return `${stackName}/${stackResourceName} ${date} (${count}): ${method} ${path}, ${sourceIp}`
+	})
 }
 
 async function processResources(invocationId, now, stacks) {
@@ -98,31 +94,35 @@ async function processResources(invocationId, now, stacks) {
 	let startTime = endTime - USAGE_MONITOR_EVENT_AGE_DAYS * 24 * 60 * 60
 	let dates = {startTime, endTime}
 	//
-	let allResults = ''
+	let allResults = []
 	let errors = []
 	for (let stack of stacks) {
 		let stackName = stack.name
 		for (let resource of stack.resources) {
-			let result = ''
+			let results = ''
 			switch (resource.type) {
 				case USAGE_TYPE_CLOUDFRONT:
-					result = await queryCloudfront(dates, stackName, resource.name, resource.source)
+					results = await queryCloudfront(dates, stackName, resource.name, resource.source)
 					break
 				case USAGE_TYPE_LOG_GROUP:
-					result = await queryLogGroup(dates, stackName, resource.name, resource.source)
+					results = await queryLogGroup(dates, stackName, resource.name, resource.source)
 					break
 				default:
 					errors.push(resource)
 			}
-			allResults += '\n' + result
+			allResults = allResults.concat(results)
 		}
 	}
 	if (errors.length > 0) {
-		allResults += '\nerrors: ' + JSON.stringify(errors, null, 2)
+		allResults.push('errors: ' + JSON.stringify(errors, null, 2))
 	}
-	console.log(`publishing sns alert:\n${allResults}`)
+	if (allResults.length == 0) {
+		allResults.push('No usage found.')
+	}
+	let resultsText = allResults.join('\n')
+	console.log(`publishing sns alert:\n${resultsText}`)
 	await publishNotification(
-		`Usage info for the past ${USAGE_MONITOR_EVENT_AGE_DAYS} days:\n\n${allResults}`,
+		`Usage info for the past ${USAGE_MONITOR_EVENT_AGE_DAYS} days:\n\n${resultsText}`,
 		'AWS usage info',
 		invocationId
 	)
