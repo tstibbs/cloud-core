@@ -4,6 +4,8 @@ import {ManagedPolicy, PolicyStatement} from 'aws-cdk-lib/aws-iam'
 import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs'
 import {Runtime} from 'aws-cdk-lib/aws-lambda'
 import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
+import {Rule, Schedule} from 'aws-cdk-lib/aws-events'
+import {LambdaFunction as LambdaFunctionTarget} from 'aws-cdk-lib/aws-events-targets'
 
 import {USAGE_MONITOR_EVENT_AGE_DAYS} from './deploy-envs.js'
 
@@ -48,6 +50,15 @@ function createUsageMonitor(stack, notificationTopic) {
 	usageMonitorFunction.role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonS3ReadOnlyAccess')) //to allow querying of abitrary buckets from other stacks
 	usageMonitorFunction.role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('CloudWatchLogsReadOnlyAccess')) //to allow querying of abitrary log groups from other stacks
 	usageMonitorFunction.role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AWSCloudFormationReadOnlyAccess')) //need to query all stacks to get usage data source info
+
+	new Rule(stack, 'uageMonitorSchedule', {
+		schedule: Schedule.cron({minute: '0', hour: '2'}), // 2am every day
+		targets: [
+			new LambdaFunctionTarget(usageMonitorFunction, {
+				retryAttempts: 1
+			})
+		]
+	})
 }
 
 export {createUsageMonitor}
