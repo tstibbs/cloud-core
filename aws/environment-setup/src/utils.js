@@ -18,7 +18,7 @@ const dydbDocClient = new aws.DynamoDB.DocumentClient()
 
 export function assertNotPaging(response) {
 	//haven't bothered to implement paging of responses, so just check that there isn't any paging required
-	assert.ok(response.NextToken == undefined) //docs say 'null' but library actually seems to be 'undefined'
+	assert.strictEqual(response.NextToken, undefined, `Paging not currently supported.`) //docs say 'null' but library actually seems to be 'undefined'
 }
 
 export async function inSeries(things, executor) {

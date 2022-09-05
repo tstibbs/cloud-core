@@ -1,8 +1,6 @@
-import assert from 'assert'
-
 import backOff from 'exponential-backoff'
 
-import {athena} from './utils.js'
+import {athena, assertNotPaging} from './utils.js'
 
 function buildCreateTableStatement(tableName, bucket, stack, resourceName) {
 	return `CREATE EXTERNAL TABLE IF NOT EXISTS ${tableName} (
@@ -82,7 +80,7 @@ async function executeAthenaQuery(sql, workGroupName) {
 				QueryExecutionId: executionId
 			})
 			.promise()
-		assert.strictEqual(queryResponse.NextToken, undefined, `Paging not currently supported.`)
+		assertNotPaging(queryResponse)
 		return queryResponse
 	}
 	let endResults = await backOff.backOff(checkForCompletion, backoffParams)
