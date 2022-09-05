@@ -50,11 +50,11 @@ export async function initialiseAthena(tableName, bucket, stack, resourceName, w
 }
 
 export async function queryAthena(tableName, startDate, endDate, workGroupName) {
-	let sql = `SELECT status, date, request_ip, count(*) as count
+	let sql = `SELECT status, date, request_ip, method, count(*) as count
 	FROM ${tableName}
 	WHERE "date" BETWEEN DATE '${startDate}' AND DATE '${endDate}'
 	and uri != '/favicon.ico'
-	group by status, date, request_ip`
+	group by status, date, request_ip, method`
 	return await executeAthenaQuery(sql, workGroupName)
 }
 

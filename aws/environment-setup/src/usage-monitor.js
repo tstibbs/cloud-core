@@ -31,12 +31,20 @@ async function queryCloudfront(dates, stackName, stackResourceName, bucketName) 
 	await initialiseAthena(tableName, bucketName, stackName, stackResourceName, ATHENA_WORKGROUP_NAME)
 	console.log('table created')
 	let results = await queryAthena(tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
-	let formattedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
+	let parsedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
 		let result = mapsToArray(Data)
-		let [status, date, sourceIp, count] = result
-		return `${stackName}/${stackResourceName} ${date} (${count}): HTTP ${status}, ${sourceIp}`
+		let [status, date, sourceIp, method, count] = result
+		let event = `${method} ${status}`
+		return {
+			stackName,
+			stackResourceName,
+			date,
+			count,
+			event,
+			sourceIp
+		}
 	})
-	return formattedResults
+	return parsedResults
 }
 
 function mapsToArray(arrayOfMaps) {
@@ -49,7 +57,15 @@ async function queryLogGroup(dates, stackName, stackResourceName, logGroup) {
 	return results.map(fieldsArray => {
 		let result = fieldsArrayToMap(fieldsArray)
 		let {date, count, sourceIp, method, path} = result
-		return `${stackName}/${stackResourceName} ${date} (${count}): ${method} ${path}, ${sourceIp}`
+		let event = `${method} ${path}`
+		return {
+			stackName,
+			stackResourceName,
+			date,
+			count,
+			event,
+			sourceIp
+		}
 	})
 }
 
@@ -87,7 +103,12 @@ async function processResources(invocationId, now, stacks) {
 	if (allResults.length == 0) {
 		allResults.push('No usage found.')
 	}
-	let resultsText = allResults.join('\n')
+	let resultsText = allResults
+		.map(
+			result =>
+				`${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp}`
+		)
+		.join('\n')
 	console.log(`publishing sns alert:\n${resultsText}`)
 	await publishNotification(
 		`Usage info for the past ${USAGE_MONITOR_EVENT_AGE_DAYS} days:\n\n${resultsText}`,
