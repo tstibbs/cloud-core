@@ -5,9 +5,10 @@ import backOff from 'exponential-backoff'
 import {cloudWatchLogs, assertNotPaging} from './utils.js'
 
 const QUERY_COMPLETE = 'Complete'
+//note the 'tolower' is simply to convert the date as millis to as a string to prevent it being put into exponential format
 const QUERY = `fields @timestamp, @message
 | parse @message "*,* *,*" as @sourceIp, @method, @path
-| stats count(*) as count by @sourceIp as sourceIp, @method as method, @path as path, datefloor(@timestamp, 1d) as date`
+| stats count(*) as count by @sourceIp as sourceIp, @method as method, @path as path, tolower(datefloor(@timestamp, 1d)) as date`
 
 /* if the endTime of the query is before the group creation time, or if retention settings 
 mean it will have nothing in, then it will error. Check here so we can return zero results 

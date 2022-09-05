@@ -17,7 +17,11 @@ function fieldsArrayToMap(fields) {
 }
 
 function timeToAthenaFormattedDate(timeInSeconds) {
-	let date = new Date(timeInSeconds * 1000)
+	return millisToFormattedDate(timeInSeconds * 1000)
+}
+
+function millisToFormattedDate(timeInMillis) {
+	let date = new Date(timeInMillis)
 	let month = `${date.getUTCMonth() + 1}`.padStart(2, '0')
 	let day = `${date.getUTCDate()}`.padStart(2, '0')
 	return `${date.getUTCFullYear()}-${month}-${day}`
@@ -57,6 +61,7 @@ async function queryLogGroup(dates, stackName, stackResourceName, logGroup) {
 	return results.map(fieldsArray => {
 		let result = fieldsArrayToMap(fieldsArray)
 		let {date, count, sourceIp, method, path} = result
+		date = millisToFormattedDate(parseInt(date))
 		let event = `${method} ${path}`
 		return {
 			stackName,
