@@ -7,7 +7,12 @@ import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
 import {Rule, Schedule} from 'aws-cdk-lib/aws-events'
 import {LambdaFunction as LambdaFunctionTarget} from 'aws-cdk-lib/aws-events-targets'
 
-import {USAGE_MONITOR_EVENT_AGE_DAYS} from './deploy-envs.js'
+import {
+	RAW_USAGE_MONITOR_EVENT_AGE_DAYS,
+	RAW_USAGE_HIGH_RISK_COUNTRIES,
+	RAW_USAGE_MY_COUNTRY_CODES,
+	IP_INFO_TOKEN
+} from './deploy-envs.js'
 
 function createUsageMonitor(stack, notificationTopic) {
 	const athenaResultsBucket = new Bucket(stack, 'athenaResultsBucket', {
@@ -33,7 +38,10 @@ function createUsageMonitor(stack, notificationTopic) {
 		environment: {
 			ALERTS_TOPIC: notificationTopic.topicArn,
 			ATHENA_WORKGROUP_NAME: usageMonitorWorkGroup.name,
-			USAGE_MONITOR_EVENT_AGE_DAYS: `${USAGE_MONITOR_EVENT_AGE_DAYS}` //will be parsed back in to a number by runtime-envs.js
+			USAGE_MONITOR_EVENT_AGE_DAYS: RAW_USAGE_MONITOR_EVENT_AGE_DAYS,
+			USAGE_HIGH_RISK_COUNTRIES: RAW_USAGE_HIGH_RISK_COUNTRIES,
+			USAGE_MY_COUNTRY_CODES: RAW_USAGE_MY_COUNTRY_CODES,
+			IP_INFO_TOKEN: IP_INFO_TOKEN
 		},
 		initialPolicy: [
 			new PolicyStatement({

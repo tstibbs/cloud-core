@@ -2,6 +2,7 @@ import {buildSingleAccountLambdaHandler, publishNotification} from './utils.js'
 import {USAGE_MONITOR_EVENT_AGE_DAYS, ATHENA_WORKGROUP_NAME} from './runtime-envs.js'
 import {initialiseAthena, queryAthena} from './usage-utils-athena.js'
 import {fetchLogEntries} from './usage-utils-logs.js'
+import {getIpInfo} from './ip-info.js'
 import {cloudformation} from './utils.js'
 import {
 	OUTPUT_PREFIX,
@@ -102,24 +103,34 @@ async function processResources(invocationId, now, stacks) {
 			allResults = allResults.concat(results)
 		}
 	}
-	if (errors.length > 0) {
-		allResults.push('errors: ' + JSON.stringify(errors, null, 2))
-	}
-	if (allResults.length == 0) {
-		allResults.push('No usage found.')
-	}
-	let resultsText = allResults
-		.map(
-			result =>
-				`${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp}`
-		)
-		.join('\n')
-	console.log(`publishing sns alert:\n${resultsText}`)
-	await publishNotification(
-		`Usage info for the past ${USAGE_MONITOR_EVENT_AGE_DAYS} days:\n\n${resultsText}`,
-		'AWS usage info',
-		invocationId
+	//add IP information
+	let ips = allResults.map(result => result.sourceIp)
+	let ipInfo = await getIpInfo(ips)
+	allResults.forEach(result => {
+		let ip = result.sourceIp
+		if (ip in ipInfo) {
+			result.risk = ipInfo[ip].risk
+		} else {
+			result.risk = 'unknown'
+		}
+	})
+	//format results
+	let formattedResults = allResults.map(
+		result =>
+			`${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp} (${result.risk} ip risk)`
 	)
+	let formattedIps = Object.entries(ipInfo).map(([ip, {description}]) => `${ip}: ${description}`)
+	formattedResults = formattedResults.concat('', formattedIps)
+	//deal with error cases
+	if (errors.length > 0) {
+		formattedResults.push('errors: ' + JSON.stringify(errors, null, 2))
+	}
+	if (formattedResults.length == 0) {
+		formattedResults.push('No usage found.')
+	}
+	let resultsText = `Usage info for the past ${USAGE_MONITOR_EVENT_AGE_DAYS} days:\n\n${formattedResults.join('\n')}`
+	console.log(`publishing sns alert:\n\`\`\`\n${resultsText}\n\`\`\``)
+	await publishNotification(resultsText, 'AWS usage info', invocationId)
 }
 
 async function queryStacks(invocationId) {
