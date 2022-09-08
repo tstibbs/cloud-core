@@ -60,7 +60,7 @@ function createUsageMonitor(stack, notificationTopic) {
 	usageMonitorFunction.role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AWSCloudFormationReadOnlyAccess')) //need to query all stacks to get usage data source info
 
 	new Rule(stack, 'uageMonitorSchedule', {
-		schedule: Schedule.cron({minute: '0', hour: '2'}), // 2am every day
+		schedule: Schedule.cron({weekDay: '1', hour: '2', minute: '0'}), // 2am every Monday morning
 		targets: [
 			new LambdaFunctionTarget(usageMonitorFunction, {
 				retryAttempts: 1
