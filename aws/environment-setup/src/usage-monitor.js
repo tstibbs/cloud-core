@@ -120,7 +120,9 @@ async function processResources(invocationId, now, stacks) {
 			`${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp} (${result.risk} ip risk)`
 	)
 	let formattedIps = Object.entries(ipInfo).map(([ip, {description}]) => `${ip}: ${description}`)
-	formattedResults = formattedResults.concat('', formattedIps)
+	if (formattedIps.length > 0) {
+		formattedResults = formattedResults.concat('', formattedIps) //empty string to add a newline
+	}
 	//deal with error cases
 	if (errors.length > 0) {
 		formattedResults.push('errors: ' + JSON.stringify(errors, null, 2))
