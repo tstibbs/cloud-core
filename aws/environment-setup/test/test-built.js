@@ -7,7 +7,7 @@ import {
 } from '../lib/deploy-utils.js'
 
 let allAccountsStack = buildAllAccountsStack()
-await validateCdkAssets(allAccountsStack.stackName, 2) //s3 bucket emptier + emergency tear down function
+await validateCdkAssets(allAccountsStack.stackName, 3) //s3 bucket emptier (shared accross buckets) + emergency tear down function + usage monitor
 
 let parentAccountCoreStack = buildParentAccountCoreStack()
 await validateCdkAssets(parentAccountCoreStack.stackName, 0)

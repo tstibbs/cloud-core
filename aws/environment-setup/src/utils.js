@@ -7,16 +7,18 @@ import {aws, assumeRole} from './auth-utils.js'
 const alertsTopic = ALERTS_TOPIC //needs to be full arn
 const childAccounts = CHILD_ACCOUNTS
 
+const athena = new aws.Athena()
 const sns = new aws.SNS()
 const s3 = new aws.S3()
 const iam = new aws.IAM()
 const iot = new aws.Iot()
 const cloudWatchLogs = new aws.CloudWatchLogs()
+const cloudformation = new aws.CloudFormation()
 const dydbDocClient = new aws.DynamoDB.DocumentClient()
 
 export function assertNotPaging(response) {
 	//haven't bothered to implement paging of responses, so just check that there isn't any paging required
-	assert.ok(response.NextToken == undefined) //docs say 'null' but library actually seems to be 'undefined'
+	assert.strictEqual(response.NextToken, undefined, `Paging not currently supported.`) //docs say 'null' but library actually seems to be 'undefined'
 }
 
 export async function inSeries(things, executor) {
@@ -82,4 +84,4 @@ export async function buildApiForAccount(accountId, api) {
 	return cloudformation
 }
 
-export {s3, iam, dydbDocClient, iot, cloudWatchLogs}
+export {s3, iam, dydbDocClient, iot, cloudWatchLogs, athena, cloudformation}

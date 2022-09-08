@@ -1,13 +1,14 @@
-import backOff from 'exponential-backoff'
-
-import {cloudWatchLogs, buildSingleAccountLambdaHandler, publishNotification} from './utils.js'
-import {USAGE_MONITOR_EVENT_AGE_DAYS} from './runtime-envs.js'
-import {USAGE_TYPE_LOG_GROUP, USAGE_TYPE_BUCKET} from '../src/constants.js'
-
-const QUERY_COMPLETE = 'Complete'
-const QUERY = `fields @timestamp, @message
-| parse @message "*,* *,*" as @sourceIp, @method, @path
-| stats count(*) as count by @sourceIp as sourceIp, @method as method, @path as path, datefloor(@timestamp, 1d) as date`
+import {buildSingleAccountLambdaHandler, publishNotification} from './utils.js'
+import {USAGE_MONITOR_EVENT_AGE_DAYS, ATHENA_WORKGROUP_NAME} from './runtime-envs.js'
+import {initialiseAthena, queryAthena} from './usage-utils-athena.js'
+import {fetchLogEntries} from './usage-utils-logs.js'
+import {getIpInfo} from './ip-info.js'
+import {cloudformation} from './utils.js'
+import {
+	OUTPUT_PREFIX,
+	USAGE_TYPE_LOG_GROUP,
+	USAGE_TYPE_CLOUDFRONT
+} from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
 
 function fieldsArrayToMap(fields) {
 	return fields.reduce((all, entry) => {
@@ -16,77 +17,140 @@ function fieldsArrayToMap(fields) {
 	}, {})
 }
 
-async function queryLogGroup(stackName, stackResourceName, logGroup) {
-	let now = new Date()
+function timeToAthenaFormattedDate(timeInSeconds) {
+	return millisToFormattedDate(timeInSeconds * 1000)
+}
+
+function millisToFormattedDate(timeInMillis) {
+	let date = new Date(timeInMillis)
+	let month = `${date.getUTCMonth() + 1}`.padStart(2, '0')
+	let day = `${date.getUTCDate()}`.padStart(2, '0')
+	return `${date.getUTCFullYear()}-${month}-${day}`
+}
+
+async function queryCloudfront(dates, stackName, stackResourceName, bucketName) {
+	let startDate = timeToAthenaFormattedDate(dates.startTime)
+	let endDate = timeToAthenaFormattedDate(dates.endTime)
+	let tableName = `default.cloudfrontlogs_${stackName}_${stackResourceName}`
+	//ensure the table exists
+	await initialiseAthena(tableName, bucketName, stackName, stackResourceName, ATHENA_WORKGROUP_NAME)
+	console.log('table created')
+	let results = await queryAthena(tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
+	let parsedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
+		let result = mapsToArray(Data)
+		let [status, date, sourceIp, method, count] = result
+		let event = `${method} ${status}`
+		return {
+			stackName,
+			stackResourceName,
+			date,
+			count,
+			event,
+			sourceIp
+		}
+	})
+	return parsedResults
+}
+
+function mapsToArray(arrayOfMaps) {
+	return arrayOfMaps.map(map => Object.values(map).join(';'))
+}
+
+async function queryLogGroup(dates, stackName, stackResourceName, logGroup) {
+	//supports any HTTP, WebSocket or REST API that has been configured with the log group settings from aws/utils/src/stacks/usage-tracking.js
+	let results = await fetchLogEntries(dates, logGroup)
+	return results.map(fieldsArray => {
+		let result = fieldsArrayToMap(fieldsArray)
+		let {date, count, sourceIp, method, path} = result
+		date = millisToFormattedDate(parseInt(date))
+		let event = `${method} ${path}`
+		return {
+			stackName,
+			stackResourceName,
+			date,
+			count,
+			event,
+			sourceIp
+		}
+	})
+}
+
+async function processResources(invocationId, now, stacks) {
 	now.setUTCHours(0)
 	now.setUTCMinutes(0)
 	now.setUTCSeconds(0)
 	now.setUTCMilliseconds(0)
 	let endTime = Math.round(now.getTime() / 1000) //the most recent occurance of UTC midnight
 	let startTime = endTime - USAGE_MONITOR_EVENT_AGE_DAYS * 24 * 60 * 60
-
-	let {queryId} = await cloudWatchLogs
-		.startQuery({
-			queryString: QUERY,
-			endTime: endTime,
-			startTime: startTime,
-			logGroupName: logGroup
-		})
-		.promise()
-
-	//keep checking the status of the query until it's completed
-	const backoffParams = {
-		maxDelay: 60 * 1000, // 1 minute
-		startingDelay: 2 * 1000 // 2 seconds
-	}
-	const checkForCompletion = async () => {
-		let queryResponse = await cloudWatchLogs
-			.getQueryResults({
-				queryId: queryId
-			})
-			.promise()
-		if (queryResponse.status != QUERY_COMPLETE) {
-			throw new Error(`status=${queryResponse.status}`) // throwing error causes backoff to retry, though if not 'running' or 'scheduled' then it's unlikely to change
-		} else {
-			return queryResponse.results
-		}
-	}
-	let results = await backOff.backOff(checkForCompletion, backoffParams)
-	return results
-		.map(fieldsArray => {
-			let result = fieldsArrayToMap(fieldsArray)
-			let {date, count, sourceIp, method, path} = result
-			return `${stackName}/${stackResourceName} ${date} (${count}): ${method} ${path}, ${sourceIp}`
-		})
-		.join('\n')
-}
-
-async function processResources(invocationId, stacks) {
-	let allResults = ''
+	let dates = {startTime, endTime}
+	//
+	let allResults = []
 	let errors = []
 	for (let stack of stacks) {
 		let stackName = stack.name
 		for (let resource of stack.resources) {
-			let result = ''
+			let results = ''
 			switch (resource.type) {
+				case USAGE_TYPE_CLOUDFRONT:
+					results = await queryCloudfront(dates, stackName, resource.name, resource.source)
+					break
 				case USAGE_TYPE_LOG_GROUP:
-					result = await queryLogGroup(stackName, resource.name, resource.source)
+					results = await queryLogGroup(dates, stackName, resource.name, resource.source)
 					break
 				default:
 					errors.push(resource)
 			}
-			allResults += '\n' + result
+			allResults = allResults.concat(results)
 		}
 	}
-	if (errors.length > 0) {
-		allResults += '\nerrors: ' + JSON.stringify(errors, null, 2)
-	}
-	console.log(`publishing sns alert:\n${allResults}`)
-	await publishNotification(
-		`Usage info for the past USAGE_MONITOR_EVENT_AGE_DAYS days:\n\n${allResults}`,
-		'AWS usage info',
-		invocationId
+	//add IP information
+	let ips = allResults.map(result => result.sourceIp)
+	let ipInfo = await getIpInfo(ips)
+	allResults.forEach(result => {
+		let ip = result.sourceIp
+		if (ip in ipInfo) {
+			result.risk = ipInfo[ip].risk
+		} else {
+			result.risk = 'unknown'
+		}
+	})
+	//format results
+	let formattedResults = allResults.map(
+		result =>
+			`${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp} (${result.risk} ip risk)`
 	)
+	let formattedIps = Object.entries(ipInfo).map(([ip, {description}]) => `${ip}: ${description}`)
+	if (formattedIps.length > 0) {
+		formattedResults = formattedResults.concat('', formattedIps) //empty string to add a newline
+	}
+	//deal with error cases
+	if (errors.length > 0) {
+		formattedResults.push('errors: ' + JSON.stringify(errors, null, 2))
+	}
+	if (formattedResults.length == 0) {
+		formattedResults.push('No usage found.')
+	}
+	let resultsText = `Usage info for the past ${USAGE_MONITOR_EVENT_AGE_DAYS} days:\n\n${formattedResults.join('\n')}`
+	console.log(`publishing sns alert:\n\`\`\`\n${resultsText}\n\`\`\``)
+	await publishNotification(resultsText, 'AWS usage info', invocationId)
 }
 
-export {processResources}
+async function queryStacks(invocationId) {
+	//get outputs from stacks
+	let listResult = await cloudformation.describeStacks().promise()
+	let stacks = listResult.Stacks.map(stack => {
+		let resources = stack.Outputs.filter(output => output.OutputKey.startsWith(OUTPUT_PREFIX)).map(output =>
+			JSON.parse(output.OutputValue)
+		)
+		return {
+			name: stack.StackName,
+			resources
+		}
+	}).filter(stack => stack.resources.length > 0)
+	console.log(JSON.stringify(stacks, null, 2))
+	const now = new Date()
+	await processResources(invocationId, now, stacks)
+}
+
+export const handler = buildSingleAccountLambdaHandler(queryStacks)
+export {processResources, queryCloudfront} //for simpler testing

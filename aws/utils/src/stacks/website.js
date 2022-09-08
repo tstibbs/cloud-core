@@ -3,7 +3,7 @@ import {Distribution, GeoRestriction, ResponseHeadersPolicy} from 'aws-cdk-lib/a
 import {S3Origin} from 'aws-cdk-lib/aws-cloudfront-origins'
 import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
 
-import {applicationLogsBucketRef} from './usage-tracking.js'
+import {applicationLogsBucketRef, outputUsageStoreInfo, USAGE_TYPE_CLOUDFRONT} from './usage-tracking.js'
 
 export function buildWebsiteResources(stack, bucketResourceName, denyCountries) {
 	const websiteBucket = new Bucket(stack, bucketResourceName, {
@@ -12,13 +12,14 @@ export function buildWebsiteResources(stack, bucketResourceName, denyCountries) 
 		autoDeleteObjects: true
 	})
 
+	const logsBucket = Bucket.fromBucketArn(stack, 'applicationLogsBucket', Fn.importValue(applicationLogsBucketRef))
 	const distributionConstructId = 'distribution'
 	const distributionProps = {
 		defaultBehavior: {
 			origin: new S3Origin(websiteBucket),
 			responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT
 		},
-		logBucket: Bucket.fromBucketArn(stack, 'applicationLogsBucket', Fn.importValue(applicationLogsBucketRef)),
+		logBucket: logsBucket,
 		logFilePrefix: `${Aws.STACK_NAME}/${distributionConstructId}`
 	}
 	if (denyCountries != null && denyCountries.length > 0) {
@@ -28,4 +29,5 @@ export function buildWebsiteResources(stack, bucketResourceName, denyCountries) 
 
 	new CfnOutput(stack, 'distributionDomainName', {value: distribution.distributionDomainName})
 	new CfnOutput(stack, 'bucketName', {value: websiteBucket.bucketName})
+	outputUsageStoreInfo(stack, distributionConstructId, logsBucket.bucketName, USAGE_TYPE_CLOUDFRONT)
 }

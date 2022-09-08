@@ -25,6 +25,7 @@ export function buildDeveloperPolicy(stack) {
 					'dynamodb:*',
 					'ecr:*',
 					'events:*',
+					'glue:*',
 					'iot:*',
 					'kinesis:*',
 					'kms:*',
