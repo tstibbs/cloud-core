@@ -8,6 +8,7 @@ const QUERY_COMPLETE = 'Complete'
 //note the 'tolower' is simply to convert the date as millis to as a string to prevent it being put into exponential format
 const QUERY = `fields @timestamp, @message
 | parse @message "*,* *,*" as @sourceIp, @method, @path
+| filter @method != 'CONNECTION_API'
 | stats count(*) as count by @sourceIp as sourceIp, @method as method, @path as path, tolower(datefloor(@timestamp, 1d)) as date`
 
 /* if the endTime of the query is before the group creation time, or if retention settings 
