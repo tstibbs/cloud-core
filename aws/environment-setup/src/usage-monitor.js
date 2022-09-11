@@ -114,25 +114,73 @@ async function processResources(invocationId, now, stacks) {
 			result.risk = 'unknown'
 		}
 	})
-	//format results
-	let formattedResults = allResults.map(
-		result =>
-			`${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp} (${result.risk} ip risk)`
-	)
-	let formattedIps = Object.entries(ipInfo).map(([ip, {description}]) => `${ip}: ${description}`)
+	//simpler report for email, more detail for the log
+	let logReport = formatResults(formatResultsForLog, allResults, ipInfo, errors)
+	let emailReport = formatResults(formatResultsForEmail, allResults, ipInfo, errors)
+	console.log(`publishing sns alert:\n\`\`\`\n${emailReport}\n\`\`\`\n\n`)
+	console.log(`detailed report:\n\`\`\`\n${logReport}\n\`\`\`\n\n`)
+	await publishNotification(emailReport, 'AWS usage info', invocationId)
+}
+
+function formatResults(resultsFormatter, allResults, ipInfo, errors) {
+	//prepare report
+	let formattedResults = []
+	//add IP information
+	let formattedIps = Object.entries(ipInfo)
+		.map(([ip, {description, risk}]) => `${ip}: ${description} (${risk} risk)`)
+		.sort()
 	if (formattedIps.length > 0) {
-		formattedResults = formattedResults.concat('', formattedIps) //empty string to add a newline
+		formattedResults = formattedResults.concat(formattedIps, '') //empty string to add a newline
 	}
+	formattedResults.push(resultsFormatter(allResults))
 	//deal with error cases
 	if (errors.length > 0) {
+		formattedResults.push('') //empty string to add a newline
 		formattedResults.push('errors: ' + JSON.stringify(errors, null, 2))
 	}
-	if (formattedResults.length == 0) {
+	if (allResults.length == 0) {
 		formattedResults.push('No usage found.')
 	}
+	//send report
 	let resultsText = `Usage info for the past ${USAGE_MONITOR_EVENT_AGE_DAYS} days:\n\n${formattedResults.join('\n')}`
-	console.log(`publishing sns alert:\n\`\`\`\n${resultsText}\n\`\`\``)
-	await publishNotification(resultsText, 'AWS usage info', invocationId)
+	return resultsText
+}
+
+function formatResultsForLog(allResults) {
+	let formattedResults = allResults
+		.map(
+			result =>
+				`${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp} (${result.risk} ip risk)`
+		)
+		.join('\n')
+	return formattedResults
+}
+
+function formatResultsForEmail(allResults) {
+	const uniques = (arr, extractor) => [...new Set(arr.map(extractor))].sort()
+	let stackDisplays = uniques(allResults, result => `${result.stackName} / ${result.stackResourceName}`)
+	let stackSummaries = stackDisplays
+		.map(stackDisplay => {
+			let stackResults = allResults.filter(
+				result => stackDisplay == `${result.stackName} / ${result.stackResourceName}`
+			)
+			let ipsToCount = stackResults.reduce((ipsToCount, stackResult) => {
+				let {count, sourceIp} = stackResult
+				if (!(sourceIp in ipsToCount)) {
+					ipsToCount[sourceIp] = 0
+				}
+				ipsToCount[sourceIp] += parseInt(count)
+				return ipsToCount
+			}, {})
+			let summaries = Object.entries(ipsToCount)
+				.map(([ip, count]) => `${ip}: ${count}`)
+				.sort()
+				.join('\n')
+			let summary = `${stackDisplay}\n${summaries}`
+			return summary
+		})
+		.join('\n\n')
+	return stackSummaries
 }
 
 async function queryStacks(invocationId) {
