@@ -11,7 +11,7 @@ import {
 import {buildDeveloperPolicy, buildCloudFormationInvokerPolicy, buildScoutSuitePolicy} from './deploy-shared-roles.js'
 import {createEmergencyInfra} from './deploy-shared-infra.js'
 import {createUsageMonitor} from './deploy-shared-usage.js'
-import {PARENT_ACCOUNT_ID} from './deploy-envs.js'
+import {PARENT_ACCOUNT_ID, DEV_SUFFIX} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME, buildNotificationChannels} from './deploy-shared.js'
 
 class AllAccountsStack extends Stack {
@@ -38,7 +38,7 @@ function createCliRoles(stack) {
 			}),
 			//Note that if the parent account core stack is dropped and recreated, these trust relationships will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
 			new ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:user/AllAccountCliEntryUser`),
-			new ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:role/toolingFunctionsRole`)
+			new ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:role/toolingFunctionsRole${DEV_SUFFIX}`)
 		),
 		managedPolicies: [developerPolicy, cloudFormationInvokerPolicy]
 	})
@@ -47,7 +47,7 @@ function createCliRoles(stack) {
 function createScoutSuiteElements(stack) {
 	let scoutSuitePolicy = buildScoutSuitePolicy(stack)
 	new Role(stack, 'scoutSuiteRole', {
-		roleName: 'ScoutSuiteRole',
+		roleName: `ScoutSuiteRole${DEV_SUFFIX}`,
 		//Note that if the parent account core stack is dropped and recreated, this trust relationship will have to be recreated too (see https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html / IAM roles / Important)
 		assumedBy: new ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:user/AllAccountCliEntryUser`),
 		managedPolicies: [scoutSuitePolicy]
@@ -69,11 +69,11 @@ function createApplicationDependencies(stack) {
 	})
 	new CfnOutput(stack, 'apiGatewayCloudWatchRoleArn', {
 		value: apiGatewayCloudWatchRole.roleArn,
-		exportName: apiGatewayCloudwatchRoleRef
+		exportName: `${apiGatewayCloudwatchRoleRef}${DEV_SUFFIX}`
 	})
 	new CfnOutput(stack, 'applicationLogsBucketArn', {
 		value: applicationLogsBucket.bucketArn,
-		exportName: applicationLogsBucketRef
+		exportName: `${applicationLogsBucketRef}${DEV_SUFFIX}`
 	})
 }
 

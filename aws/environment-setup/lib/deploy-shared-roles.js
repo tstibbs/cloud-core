@@ -1,5 +1,7 @@
 import iam from 'aws-cdk-lib/aws-iam'
 
+import {DEV_SUFFIX} from './deploy-envs.js'
+
 /* This file just contains roles with lots of actions, to prevent the large text blocks making it hard to read the main stack file */
 
 const bootstrapQualifier = 'hnb659fds' // this is the default value, unlikely to need to change it (hence the hard-coding) but pulled out to make it easy to change if necessary
@@ -11,7 +13,7 @@ const eu12Condition = {
 
 export function buildDeveloperPolicy(stack) {
 	return new iam.ManagedPolicy(stack, 'developerPolicy', {
-		managedPolicyName: 'developerPolicy',
+		managedPolicyName: `developerPolicy${DEV_SUFFIX}`,
 		description: `Sensible permissive policy for a developer, including IAM access.`,
 		statements: [
 			new iam.PolicyStatement({

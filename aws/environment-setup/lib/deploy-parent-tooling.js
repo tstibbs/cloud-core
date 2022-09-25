@@ -6,7 +6,13 @@ import events from 'aws-cdk-lib/aws-events'
 import eventsTargets from 'aws-cdk-lib/aws-events-targets'
 import dynamodb from 'aws-cdk-lib/aws-dynamodb'
 
-import {CHILD_ACCOUNTS, RAW_CHILD_ACCOUNTS, MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './deploy-envs.js'
+import {
+	CHILD_ACCOUNTS,
+	RAW_CHILD_ACCOUNTS,
+	MAX_CREDENTIAL_AGE,
+	MAX_UNUSED_CREDENTIAL_DAYS,
+	DEV_SUFFIX
+} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 import {MONITOR_STORE_SCHEMA} from '../src/constants.js'
 
@@ -32,7 +38,7 @@ function createLambda(stack, notificationTopic) {
 		]
 	})
 	const toolingFunctionsRole = new iam.Role(stack, 'toolingFunctionsRole', {
-		roleName: 'toolingFunctionsRole',
+		roleName: `toolingFunctionsRole${DEV_SUFFIX}`,
 		assumedBy: new iam.CompositePrincipal(
 			new iam.ServicePrincipal('lambda.amazonaws.com', {
 				assumeRoleAction: 'sts:AssumeRole'

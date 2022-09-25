@@ -1,9 +1,4 @@
 export * from '../src/runtime-envs.js'
 
-import {exec} from '@tstibbs/cloud-core-utils'
-
-let {STACK_NAME} = process.env
-if (STACK_NAME == null || STACK_NAME.length == 0) {
-	STACK_NAME = 'Default'
-}
-export {STACK_NAME}
+export const DEV_MODE = process.env.DEV_MODE == 'true' //if not set, defaults to false
+export const DEV_SUFFIX = DEV_MODE ? '-Dev' : '' //suffix concrete resource names in dev mode to prevent it conflicting with the actual stack

@@ -4,7 +4,7 @@ import {
 	buildParentAccountCoreStack,
 	buildParentAccountInfraStack,
 	buildIotStack
-} from '../lib/deploy-utils.js'
+} from '../lib/deploy-entrypoint.js'
 
 let allAccountsStack = buildAllAccountsStack()
 await validateCdkAssets(allAccountsStack.stackName, 3) //s3 bucket emptier (shared accross buckets) + emergency tear down function + usage monitor

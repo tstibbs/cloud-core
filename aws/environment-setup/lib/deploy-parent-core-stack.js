@@ -3,7 +3,7 @@ import iam from 'aws-cdk-lib/aws-iam'
 
 import {applyStandardTags} from '@tstibbs/cloud-core-utils'
 
-import {CHILD_ACCOUNTS} from './deploy-envs.js'
+import {CHILD_ACCOUNTS, DEV_SUFFIX} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
 
 class ParentAccountCoreStack extends cdk.Stack {
@@ -58,7 +58,7 @@ class ParentAccountCoreStack extends cdk.Stack {
 		})
 
 		let allAccountCliEntryUser = new iam.User(stack, 'allAccountCliEntryUser', {
-			userName: 'AllAccountCliEntryUser'
+			userName: `AllAccountCliEntryUser${DEV_SUFFIX}`
 		})
 		allAccountCliEntryUser.addToGroup(allAccountCliEntryGroup)
 	}

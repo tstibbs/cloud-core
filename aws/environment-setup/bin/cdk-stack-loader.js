@@ -5,7 +5,7 @@ import {
 	buildParentAccountCoreStack,
 	buildParentAccountInfraStack,
 	buildIotStack
-} from '../lib/deploy-utils.js'
+} from '../lib/deploy-entrypoint.js'
 
 buildAllAccountsStack()
 buildParentAccountCoreStack()

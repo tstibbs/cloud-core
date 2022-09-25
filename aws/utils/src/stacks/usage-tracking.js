@@ -1,8 +1,9 @@
 import {RemovalPolicy, CfnOutput} from 'aws-cdk-lib'
 import {LogGroup} from 'aws-cdk-lib/aws-logs'
+import {SHARED_STACK_NAME} from './constants.js'
 
-export const apiGatewayCloudwatchRoleRef = `AllAccountsStack-apiGatewayCloudWatchRoleArn`
-export const applicationLogsBucketRef = `AllAccountsStack-applicationLogsBucketArn`
+export const apiGatewayCloudwatchRoleRef = `${SHARED_STACK_NAME}-apiGatewayCloudWatchRoleArn`
+export const applicationLogsBucketRef = `${SHARED_STACK_NAME}-applicationLogsBucketArn`
 export const OUTPUT_PREFIX = 'USAGETRACKING'
 export const USAGE_TYPE_LOG_GROUP = 'LogGroup'
 export const USAGE_TYPE_CLOUDFRONT = 'CloudFront'
