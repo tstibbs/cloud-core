@@ -85,12 +85,25 @@ async function checkOneStack(cloudformation, stackName) {
 	}
 }
 
+function deletedStacksFilter(summary) {
+	//explicitly list states, we don't want to accidentally ignore a new state should one get added in the future
+	const ignoredStates = [
+		'ROLLBACK_COMPLETE', //Successful removal of one or more stacks after a failed stack creation or after an explicitly canceled stack creation.
+		'ROLLBACK_FAILED', //Unsuccessful removal of one or more stacks after a failed stack creation or after an explicitly canceled stack creation.
+		'ROLLBACK_IN_PROGRESS', //Ongoing removal of one or more stacks after a failed stack creation or after an explicitly canceled stack creation.
+		'CREATE_IN_PROGRESS',
+		'CREATE_FAILED',
+		'DELETE_COMPLETE',
+		'DELETE_FAILED',
+		'DELETE_IN_PROGRESS'
+	]
+	return !ignoredStates.includes(summary.StackStatus)
+}
+
 async function checkOneAccount(accountId) {
 	let cloudformation = await buildApiForAccount(accountId, 'CloudFormation')
 	let stackResponse = await cloudformation.listStacks({}).promise()
-	let stacks = stackResponse.StackSummaries.filter(summary => !/^DELETE.*/.test(summary.StackStatus)).map(
-		summary => summary.StackName
-	)
+	let stacks = stackResponse.StackSummaries.filter(deletedStacksFilter).map(summary => summary.StackName)
 	console.log(`Checking drift status for: ${accountId} / ${stacks}`)
 	assertNotPaging(stackResponse)
 
