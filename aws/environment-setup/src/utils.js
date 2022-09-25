@@ -77,8 +77,8 @@ function getCurrentLambdaLogsLink() {
 	)}/log-events/${encode(AWS_LAMBDA_LOG_STREAM_NAME)}`
 }
 
-export async function buildApiForAccount(accountId, api) {
-	let oldCreds = await assumeRole(`arn:aws:iam::${accountId}:role/ParentAccountCliRole`)
+export async function buildApiForAccount(accountId, role, api) {
+	let oldCreds = await assumeRole(`arn:aws:iam::${accountId}:role/${role}`)
 	let cloudformation = new aws[api]()
 	aws.config.credentials = oldCreds
 	return cloudformation

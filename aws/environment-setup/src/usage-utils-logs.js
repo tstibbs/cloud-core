@@ -2,7 +2,7 @@ import assert from 'assert'
 
 import backOff from 'exponential-backoff'
 
-import {cloudWatchLogs, assertNotPaging} from './utils.js'
+import {assertNotPaging} from './utils.js'
 
 const QUERY_COMPLETE = 'Complete'
 //note the 'tolower' is simply to convert the date as millis to as a string to prevent it being put into exponential format
@@ -14,7 +14,7 @@ const QUERY = `fields @timestamp, @message
 /* if the endTime of the query is before the group creation time, or if retention settings 
 mean it will have nothing in, then it will error. Check here so we can return zero results 
 instead of trying to make an invalid query and then trying to catch the error. */
-async function isQueryInTimeRange(endTime, logGroupName) {
+async function isQueryInTimeRange(cloudWatchLogs, endTime, logGroupName) {
 	let endTimeInMillis = endTime * 1000
 	let result = await cloudWatchLogs
 		.describeLogGroups({
@@ -35,8 +35,8 @@ async function isQueryInTimeRange(endTime, logGroupName) {
 	return sinceCreation && sinceRetention
 }
 
-export async function fetchLogEntries(dates, logGroup) {
-	if ((await isQueryInTimeRange(dates.endTime, logGroup)) == false) {
+export async function fetchLogEntries(cloudWatchLogs, dates, logGroup) {
+	if ((await isQueryInTimeRange(cloudWatchLogs, dates.endTime, logGroup)) == false) {
 		return []
 	} else {
 		let {queryId} = await cloudWatchLogs

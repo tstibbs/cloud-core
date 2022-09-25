@@ -4,7 +4,7 @@ import iam from 'aws-cdk-lib/aws-iam'
 import {applyStandardTags} from '@tstibbs/cloud-core-utils'
 
 import {CHILD_ACCOUNTS, DEV_SUFFIX} from './deploy-envs.js'
-import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
+import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-utils.js'
 
 class ParentAccountCoreStack extends cdk.Stack {
 	constructor(scope, id, props) {

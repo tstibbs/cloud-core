@@ -10,9 +10,9 @@ import {
 
 import {buildDeveloperPolicy, buildCloudFormationInvokerPolicy, buildScoutSuitePolicy} from './deploy-shared-roles.js'
 import {createEmergencyInfra} from './deploy-shared-infra.js'
-import {createUsageMonitor} from './deploy-shared-usage.js'
+import {createSharedUsageMonitorResources} from './deploy-shared-usage.js'
 import {PARENT_ACCOUNT_ID, DEV_SUFFIX} from './deploy-envs.js'
-import {PARENT_ACCNT_CLI_ROLE_NAME, buildNotificationChannels} from './deploy-shared.js'
+import {PARENT_ACCNT_CLI_ROLE_NAME, buildNotificationChannels} from './deploy-utils.js'
 
 class AllAccountsStack extends Stack {
 	constructor(scope, id, props) {
@@ -22,7 +22,7 @@ class AllAccountsStack extends Stack {
 		createScoutSuiteElements(this)
 		createEmergencyInfra(this, notificationTopic)
 		createApplicationDependencies(this)
-		createUsageMonitor(this, notificationTopic)
+		createSharedUsageMonitorResources(this)
 		applyStandardTags(this)
 	}
 }

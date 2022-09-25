@@ -15,7 +15,7 @@ async function checkOneAccount(accountId) {
 	const now = Date.now()
 	const maxCredentialAge = MAX_CREDENTIAL_AGE //in days
 	const maxUnusedCredentialDays = MAX_UNUSED_CREDENTIAL_DAYS //in days
-	const iam = await buildApiForAccount(accountId, 'IAM')
+	const iam = await buildApiForAccount(accountId, 'ParentAccountCliRole', 'IAM')
 
 	async function runChecks() {
 		await doWithBackoff('generateCredentialReport')

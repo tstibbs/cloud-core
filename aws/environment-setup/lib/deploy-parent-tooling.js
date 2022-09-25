@@ -13,8 +13,9 @@ import {
 	MAX_UNUSED_CREDENTIAL_DAYS,
 	DEV_SUFFIX
 } from './deploy-envs.js'
-import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-shared.js'
+import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-utils.js'
 import {MONITOR_STORE_SCHEMA} from '../src/constants.js'
+import {createParentUsageMonitorResources} from './deploy-shared-usage.js'
 
 function buildMonitorStore(stack) {
 	const monitorStoreTable = new dynamodb.Table(stack, 'monitorStoreTable', {
@@ -95,6 +96,7 @@ function createLambda(stack, notificationTopic) {
 
 export function buildTooling(stack, notificationTopic) {
 	createLambda(stack, notificationTopic)
+	createParentUsageMonitorResources(stack, notificationTopic)
 }
 
 export {buildMonitorStore}

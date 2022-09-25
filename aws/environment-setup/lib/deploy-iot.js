@@ -9,7 +9,7 @@ import {PolicyStatement} from 'aws-cdk-lib/aws-iam'
 import {applyStandardTags} from '@tstibbs/cloud-core-utils'
 
 import {buildMonitorStore} from './deploy-parent-tooling.js'
-import {buildNotificationChannels} from './deploy-shared.js'
+import {buildNotificationChannels} from './deploy-utils.js'
 
 export class IotStack extends Stack {
 	constructor(scope, id, props) {

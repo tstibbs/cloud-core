@@ -1,6 +1,8 @@
 import backOff from 'exponential-backoff'
 
-import {athena, assertNotPaging} from './utils.js'
+import {assertNotPaging} from './utils.js'
+
+import {INFRA_ATHENA_WORKGROUP_NAME} from './constants.js'
 
 function buildCreateTableStatement(tableName, bucket, stack, resourceName) {
 	return `CREATE EXTERNAL TABLE IF NOT EXISTS ${tableName} (
@@ -44,25 +46,25 @@ function buildCreateTableStatement(tableName, bucket, stack, resourceName) {
 	TBLPROPERTIES ( 'skip.header.line.count'='2' )`
 }
 
-export async function initialiseAthena(tableName, bucket, stack, resourceName, workGroupName) {
+export async function initialiseAthena(athena, tableName, bucket, stack, resourceName) {
 	let sql = buildCreateTableStatement(tableName, bucket, stack, resourceName)
-	return await executeAthenaQuery(sql, workGroupName)
+	return await executeAthenaQuery(athena, sql)
 }
 
-export async function queryAthena(tableName, startDate, endDate, workGroupName) {
+export async function queryAthena(athena, tableName, startDate, endDate) {
 	let sql = `SELECT status, date, request_ip, method, count(*) as count
 	FROM ${tableName}
 	WHERE "date" BETWEEN DATE '${startDate}' AND DATE '${endDate}'
 	and uri != '/favicon.ico'
 	group by status, date, request_ip, method`
-	return await executeAthenaQuery(sql, workGroupName)
+	return await executeAthenaQuery(athena, sql)
 }
 
-async function executeAthenaQuery(sql, workGroupName) {
+async function executeAthenaQuery(athena, sql) {
 	//initiate query
 	var params = {
 		QueryString: sql,
-		WorkGroup: workGroupName
+		WorkGroup: INFRA_ATHENA_WORKGROUP_NAME
 	}
 	let startResults = await athena.startQueryExecution(params).promise()
 	let executionId = startResults.QueryExecutionId

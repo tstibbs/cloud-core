@@ -1,9 +1,9 @@
-import {buildSingleAccountLambdaHandler, publishNotification} from './utils.js'
+import {buildMultiAccountLambdaHandler, publishNotification, buildApiForAccount} from './utils.js'
 import {USAGE_MONITOR_EVENT_AGE_DAYS, ATHENA_WORKGROUP_NAME} from './runtime-envs.js'
 import {initialiseAthena, queryAthena} from './usage-utils-athena.js'
 import {fetchLogEntries} from './usage-utils-logs.js'
+import {USAGE_CHILD_ROLE_NAME} from './constants.js'
 import {getIpInfo} from './ip-info.js'
-import {cloudformation} from './utils.js'
 import {
 	OUTPUT_PREFIX,
 	USAGE_TYPE_LOG_GROUP,
@@ -28,19 +28,21 @@ function millisToFormattedDate(timeInMillis) {
 	return `${date.getUTCFullYear()}-${month}-${day}`
 }
 
-async function queryCloudfront(dates, stackName, stackResourceName, bucketName) {
+async function queryCloudfront(apis, accountId, dates, stackName, stackResourceName, bucketName) {
+	const {athena} = apis
 	let startDate = timeToAthenaFormattedDate(dates.startTime)
 	let endDate = timeToAthenaFormattedDate(dates.endTime)
 	let tableName = `default.cloudfrontlogs_${stackName}_${stackResourceName}`
 	//ensure the table exists
-	await initialiseAthena(tableName, bucketName, stackName, stackResourceName, ATHENA_WORKGROUP_NAME)
+	await initialiseAthena(athena, tableName, bucketName, stackName, stackResourceName, ATHENA_WORKGROUP_NAME)
 	console.log('table created')
-	let results = await queryAthena(tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
+	let results = await queryAthena(athena, tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
 	let parsedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
 		let result = mapsToArray(Data)
 		let [status, date, sourceIp, method, count] = result
 		let event = `${method} ${status}`
 		return {
+			accountId,
 			stackName,
 			stackResourceName,
 			date,
@@ -56,15 +58,17 @@ function mapsToArray(arrayOfMaps) {
 	return arrayOfMaps.map(map => Object.values(map).join(';'))
 }
 
-async function queryLogGroup(dates, stackName, stackResourceName, logGroup) {
+async function queryLogGroup(apis, accountId, dates, stackName, stackResourceName, logGroup) {
+	const {cloudWatchLogs} = apis
 	//supports any HTTP, WebSocket or REST API that has been configured with the log group settings from aws/utils/src/stacks/usage-tracking.js
-	let results = await fetchLogEntries(dates, logGroup)
+	let results = await fetchLogEntries(cloudWatchLogs, dates, logGroup)
 	return results.map(fieldsArray => {
 		let result = fieldsArrayToMap(fieldsArray)
 		let {date, count, sourceIp, method, path} = result
 		date = millisToFormattedDate(parseInt(date))
 		let event = `${method} ${path}`
 		return {
+			accountId,
 			stackName,
 			stackResourceName,
 			date,
@@ -75,7 +79,7 @@ async function queryLogGroup(dates, stackName, stackResourceName, logGroup) {
 	})
 }
 
-async function processResources(invocationId, now, stacks) {
+async function processResources(accountId, now, stacks, apis) {
 	now.setUTCHours(0)
 	now.setUTCMinutes(0)
 	now.setUTCSeconds(0)
@@ -89,13 +93,13 @@ async function processResources(invocationId, now, stacks) {
 	for (let stack of stacks) {
 		let stackName = stack.name
 		for (let resource of stack.resources) {
-			let results = ''
+			let results = []
 			switch (resource.type) {
 				case USAGE_TYPE_CLOUDFRONT:
-					results = await queryCloudfront(dates, stackName, resource.name, resource.source)
+					results = await queryCloudfront(apis, accountId, dates, stackName, resource.name, resource.source)
 					break
 				case USAGE_TYPE_LOG_GROUP:
-					results = await queryLogGroup(dates, stackName, resource.name, resource.source)
+					results = await queryLogGroup(apis, accountId, dates, stackName, resource.name, resource.source)
 					break
 				default:
 					errors.push(resource)
@@ -103,23 +107,10 @@ async function processResources(invocationId, now, stacks) {
 			allResults = allResults.concat(results)
 		}
 	}
-	//add IP information
-	let ips = allResults.map(result => result.sourceIp)
-	let ipInfo = await getIpInfo(ips)
-	allResults.forEach(result => {
-		let ip = result.sourceIp
-		if (ip in ipInfo) {
-			result.risk = ipInfo[ip].risk
-		} else {
-			result.risk = 'unknown'
-		}
-	})
-	//simpler report for email, more detail for the log
-	let logReport = formatResults(formatResultsForLog, allResults, ipInfo, errors)
-	let emailReport = formatResults(formatResultsForEmail, allResults, ipInfo, errors)
-	console.log(`publishing sns alert:\n\`\`\`\n${emailReport}\n\`\`\`\n\n`)
-	console.log(`detailed report:\n\`\`\`\n${logReport}\n\`\`\`\n\n`)
-	await publishNotification(emailReport, 'AWS usage info', invocationId)
+	return {
+		results: allResults,
+		errors
+	}
 }
 
 function formatResults(resultsFormatter, allResults, ipInfo, errors) {
@@ -150,7 +141,7 @@ function formatResultsForLog(allResults) {
 	let formattedResults = allResults
 		.map(
 			result =>
-				`${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp} (${result.risk} ip risk)`
+				`${result.accountId}/${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp} (${result.risk} ip risk)`
 		)
 		.join('\n')
 	return formattedResults
@@ -158,11 +149,14 @@ function formatResultsForLog(allResults) {
 
 function formatResultsForEmail(allResults) {
 	const uniques = (arr, extractor) => [...new Set(arr.map(extractor))].sort()
-	let stackDisplays = uniques(allResults, result => `${result.stackName} / ${result.stackResourceName}`)
+	let stackDisplays = uniques(
+		allResults,
+		result => `${result.accountId} / ${result.stackName} / ${result.stackResourceName}`
+	)
 	let stackSummaries = stackDisplays
 		.map(stackDisplay => {
 			let stackResults = allResults.filter(
-				result => stackDisplay == `${result.stackName} / ${result.stackResourceName}`
+				result => stackDisplay == `${result.accountId} / ${result.stackName} / ${result.stackResourceName}`
 			)
 			let ipsToCount = stackResults.reduce((ipsToCount, stackResult) => {
 				let {count, sourceIp} = stackResult
@@ -183,7 +177,14 @@ function formatResultsForEmail(allResults) {
 	return stackSummaries
 }
 
-async function queryStacks(invocationId) {
+async function checkOneAccount(accountId) {
+	const cloudformation = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, 'CloudFormation')
+	const athena = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, 'Athena')
+	const cloudWatchLogs = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, 'CloudWatchLogs')
+	const apis = {
+		athena,
+		cloudWatchLogs
+	}
 	//get outputs from stacks
 	let listResult = await cloudformation.describeStacks().promise()
 	let stacks = listResult.Stacks.map(stack => {
@@ -197,8 +198,29 @@ async function queryStacks(invocationId) {
 	}).filter(stack => stack.resources.length > 0)
 	console.log(JSON.stringify(stacks, null, 2))
 	const now = new Date()
-	await processResources(invocationId, now, stacks)
+	return await processResources(accountId, now, stacks, apis)
 }
 
-export const handler = buildSingleAccountLambdaHandler(queryStacks)
-export {processResources, queryCloudfront} //for simpler testing
+async function summariseAccounts(invocationId, allAcountsData) {
+	let allResults = allAcountsData.map(output => output.results).flat()
+	let allErrors = allAcountsData.map(output => output.errors).flat()
+	//add IP information
+	let ips = allResults.map(result => result.sourceIp)
+	let ipInfo = await getIpInfo(ips)
+	allResults.forEach(result => {
+		let ip = result.sourceIp
+		if (ip in ipInfo) {
+			result.risk = ipInfo[ip].risk
+		} else {
+			result.risk = 'unknown'
+		}
+	})
+	//simpler report for email, more detail for the log
+	let logReport = formatResults(formatResultsForLog, allResults, ipInfo, allErrors)
+	let emailReport = formatResults(formatResultsForEmail, allResults, ipInfo, allErrors)
+	console.log(`publishing sns alert:\n\`\`\`\n${emailReport}\n\`\`\`\n\n`)
+	console.log(`detailed report:\n\`\`\`\n${logReport}\n\`\`\`\n\n`)
+	await publishNotification(emailReport, 'AWS usage info', invocationId)
+}
+
+export const handler = buildMultiAccountLambdaHandler(checkOneAccount, summariseAccounts)

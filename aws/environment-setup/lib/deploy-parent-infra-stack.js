@@ -6,7 +6,7 @@ import {applyStandardTags} from '@tstibbs/cloud-core-utils'
 
 import {buildAccountMonitoring} from './deploy-parent-monitoring.js'
 import {buildTooling} from './deploy-parent-tooling.js'
-import {buildNotificationChannels} from './deploy-shared.js'
+import {buildNotificationChannels} from './deploy-utils.js'
 import {WARNING_BUDGET} from './deploy-envs.js'
 
 class ParentAccountInfraStack extends cdk.Stack {

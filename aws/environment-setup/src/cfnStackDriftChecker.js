@@ -101,7 +101,7 @@ function deletedStacksFilter(summary) {
 }
 
 async function checkOneAccount(accountId) {
-	let cloudformation = await buildApiForAccount(accountId, 'CloudFormation')
+	let cloudformation = await buildApiForAccount(accountId, 'ParentAccountCliRole', 'CloudFormation')
 	let stackResponse = await cloudformation.listStacks({}).promise()
 	let stacks = stackResponse.StackSummaries.filter(deletedStacksFilter).map(summary => summary.StackName)
 	console.log(`Checking drift status for: ${accountId} / ${stacks}`)
