@@ -38,4 +38,5 @@ export function buildWebsiteResources(stack, bucketResourceName, denyCountries) 
 	new CfnOutput(stack, 'distributionDomainName', {value: distribution.distributionDomainName})
 	new CfnOutput(stack, 'bucketName', {value: websiteBucket.bucketName})
 	outputUsageStoreInfo(stack, distributionConstructId, logsBucket.bucketName, USAGE_TYPE_CLOUDFRONT)
+	return distribution
 }
