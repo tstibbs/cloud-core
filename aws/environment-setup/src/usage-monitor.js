@@ -123,7 +123,7 @@ function formatResults(resultsFormatter, allResults, ipInfo, errors) {
 	if (formattedIps.length > 0) {
 		formattedResults = formattedResults.concat(formattedIps, '') //empty string to add a newline
 	}
-	formattedResults.push(resultsFormatter(allResults))
+	formattedResults.push(resultsFormatter(allResults, ipInfo))
 	//deal with error cases
 	if (errors.length > 0) {
 		formattedResults.push('') //empty string to add a newline
@@ -137,7 +137,7 @@ function formatResults(resultsFormatter, allResults, ipInfo, errors) {
 	return resultsText
 }
 
-function formatResultsForLog(allResults) {
+function formatResultsForLog(allResults, ipInfo) {
 	let formattedResults = allResults
 		.map(
 			result =>
@@ -147,7 +147,7 @@ function formatResultsForLog(allResults) {
 	return formattedResults
 }
 
-function formatResultsForEmail(allResults) {
+function formatResultsForEmail(allResults, ipInfo) {
 	const uniques = (arr, extractor) => [...new Set(arr.map(extractor))].sort()
 	let stackDisplays = uniques(
 		allResults,
@@ -160,10 +160,20 @@ function formatResultsForEmail(allResults) {
 			)
 			let ipsToCount = stackResults.reduce((ipsToCount, stackResult) => {
 				let {count, sourceIp} = stackResult
-				if (!(sourceIp in ipsToCount)) {
-					ipsToCount[sourceIp] = 0
+				let ipDescriptor = sourceIp
+				if (sourceIp in ipInfo) {
+					let {description, risk} = ipInfo[sourceIp]
+					let descriptionRegex = /^([^\(]+\()AS\d+ (.+\))$/
+					let regexMatch = description.match(descriptionRegex)
+					if (regexMatch != null) {
+						description = `${regexMatch[1]}${regexMatch[2]}`
+					}
+					ipDescriptor = `${risk} risk: ${description}`
 				}
-				ipsToCount[sourceIp] += parseInt(count)
+				if (!(ipDescriptor in ipsToCount)) {
+					ipsToCount[ipDescriptor] = 0
+				}
+				ipsToCount[ipDescriptor] += parseInt(count)
 				return ipsToCount
 			}, {})
 			let summaries = Object.entries(ipsToCount)
