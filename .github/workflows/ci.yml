@@ -36,3 +36,15 @@ jobs:
     - run: npm run test
       working-directory: aws/environment-setup
     # don't run the actual deploy in the CI, but run everything up to here to get the best idea of whether it works
+
+    # edge code
+
+    - run: npm ci
+      working-directory: edge/iot
+    - run: npm run test
+      working-directory: edge/iot
+    - name: Set up environment for docker build
+      run: mkdir example-container/app && cp -r *.js* node_modules example-container/app/
+      working-directory: edge/iot
+    - run: docker-compose build
+      working-directory: edge/iot/example-container

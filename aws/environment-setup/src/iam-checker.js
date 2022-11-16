@@ -1,4 +1,4 @@
-import csvParse from 'csv-parse/lib/sync.js'
+import {parse as csvParse} from 'csv-parse/sync'
 import backOff from 'exponential-backoff'
 
 import {MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './runtime-envs.js'

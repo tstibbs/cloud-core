@@ -15,13 +15,13 @@
 		"cdk-tools": "./src/cdkTools/cli.js"
 	},
 	"dependencies": {
-		"aws-cdk": "^2.38.0",
-		"aws-cdk-lib": "^2.38.0",
-		"aws-sdk": "^2.1196.0",
-		"dotenv": "^16.0.1",
+		"aws-cdk": "^2.50.0",
+		"aws-cdk-lib": "^2.50.0",
+		"aws-sdk": "^2.1255.0",
+		"dotenv": "^16.0.3",
 		"es-main": "^1.2.0",
 		"node-watch-changes": "^2.0.3",
-		"yargs": "^17.5.1"
+		"yargs": "^17.6.2"
 	},
 	"devDependencies": {
 		"recursive-readdir-async": "^1.2.1"

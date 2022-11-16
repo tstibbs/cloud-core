@@ -11,8 +11,11 @@
 		"*.js"
 	],
 	"main": "iot-client.js",
+	"scripts": {
+		"test": "node uptime-client.js test"
+	},
 	"dependencies": {
 		"aws-iot-device-sdk": "^2.2.12",
-		"dotenv": "^16.0.1"
+		"dotenv": "^16.0.3"
 	}
 }
