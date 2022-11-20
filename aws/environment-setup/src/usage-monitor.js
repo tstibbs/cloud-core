@@ -32,7 +32,7 @@ async function queryCloudfront(apis, accountId, dates, stackName, stackResourceN
 	const {athena} = apis
 	let startDate = timeToAthenaFormattedDate(dates.startTime)
 	let endDate = timeToAthenaFormattedDate(dates.endTime)
-	let tableName = `default.cloudfrontlogs_${stackName}_${stackResourceName}`
+	let tableName = `cloudfrontlogs_${stackName}_${stackResourceName}`
 	//ensure the table exists
 	await initialiseAthena(athena, tableName, bucketName, stackName, stackResourceName, ATHENA_WORKGROUP_NAME)
 	console.log('table created')

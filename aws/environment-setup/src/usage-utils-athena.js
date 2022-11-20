@@ -4,8 +4,14 @@ import {assertNotPaging} from './utils.js'
 
 import {INFRA_ATHENA_WORKGROUP_NAME} from './constants.js'
 
+function safeTableName(tableName) {
+	tableName = tableName.toLowerCase()
+	tableName = tableName.replaceAll(/[^a-z_0-9]/g, '__')
+	return tableName
+}
+
 function buildCreateTableStatement(tableName, bucket, stack, resourceName) {
-	return `CREATE EXTERNAL TABLE IF NOT EXISTS ${tableName} (
+	return `CREATE EXTERNAL TABLE IF NOT EXISTS \`default.${safeTableName(tableName)}\` (
 		\`date\` DATE,
 		time STRING,
 		location STRING,
@@ -53,7 +59,7 @@ export async function initialiseAthena(athena, tableName, bucket, stack, resourc
 
 export async function queryAthena(athena, tableName, startDate, endDate) {
 	let sql = `SELECT status, date, request_ip, method, count(*) as count
-	FROM ${tableName}
+	FROM default.${safeTableName(tableName)}
 	WHERE "date" BETWEEN DATE '${startDate}' AND DATE '${endDate}'
 	and uri != '/favicon.ico'
 	group by status, date, request_ip, method`
