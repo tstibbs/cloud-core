@@ -76,4 +76,8 @@ export class CloudFrontResources {
 			originRequestPolicy: this.#originRequestPolicy
 		})
 	}
+
+	get distribution() {
+		return this.#distribution
+	}
 }
