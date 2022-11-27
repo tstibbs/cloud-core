@@ -29,12 +29,24 @@ if (showDebug) {
 		}
 	}
 
-	function displayError() {
+	function displayError(/*arguments*/) {
 		var args = Array.prototype.slice.call(arguments)
 		var container = document.getElementById('error-container')
 		if (container != null) {
 			var elem = document.createElement('p')
 			elem.className = 'error'
+			args = args.map(arg => {
+				if (typeof arg === 'string') {
+					return arg
+				} else {
+					try {
+						return JSON.stringify(arg)
+					} catch (e) {
+						//fallback, might as well try to show _something_
+						return `${arg}`
+					}
+				}
+			})
 			var message = args.join(' | ')
 			elem.innerHTML = message
 			var list = document.getElementById('errors-list')
