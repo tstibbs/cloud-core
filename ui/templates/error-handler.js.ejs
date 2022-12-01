@@ -1,7 +1,9 @@
 // This file must have no dependencies and must be loaded first, so it can warn of any issues loading dependent libraries
 
 const showDebug =
-	new URLSearchParams(location.search).has('debug') || new URLSearchParams(location.hash.substring(1)).has('debug')
+	<%= !!logsEntriesIndicateErrors %> ||
+	new URLSearchParams(location.search).has('debug') ||
+	new URLSearchParams(location.hash.substring(1)).has('debug')
 
 if (showDebug) {
 	var functionsToWrap = ['log', 'error', 'warn']

@@ -1,8 +1,12 @@
 <div id="error-container" style="display: none">
-	<p class="title">Some errors may have occurred:</p>
+	<p class="title">Some errors <% if (!logsEntriesIndicateErrors) { %>may <% } %>have occurred:</p>
 	<div id="errors-list"></div>
 	<div>
-		If these are errors, you may wish to report them by raising a
+		<% if (!!logsEntriesIndicateErrors) { %>
+			You may wish to report these errors by raising a 
+		<% } else { %>
+			If these are errors, you may wish to report them by raising a 
+		<% } %>
 		<a href="<%= bugReportUrl %>">bug report</a>.
 	</div>
 	<a id="dismiss-button" href="#">Hide</a>

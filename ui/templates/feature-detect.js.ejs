@@ -25,7 +25,11 @@ if (unsupportedFeatures.length > 0) {
 		'), please either use a more modern browser (ideally Chrome) or report a bug at <%= bugReportUrl %>.'
 	try {
 		console.log(errorMessage)
-		document.write(errorMessage)
+		<% if (!!writeFeatureErrorsToDom) { %>
+			document.write(errorMessage)
+		<% } else { %>
+			alert(errorMessage)
+		<% } %>
 		document.execCommand('Stop')
 	} catch (err) {
 		console.error(err)
