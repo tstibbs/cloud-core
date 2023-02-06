@@ -80,7 +80,15 @@ async function executeAthenaQuery(athena, sql) {
 	//keep checking the status of the query until it's completed
 	const backoffParams = {
 		maxDelay: 60 * 1000, // 1 minute
-		startingDelay: 2 * 1000 // 2 seconds
+		startingDelay: 2 * 1000, // 2 seconds
+		retry: e => {
+			if (e.message.endsWith('Final query state: FAILED')) {
+				console.error('aborting retry, query has already failed.')
+				return false
+			} else {
+				return true
+			}
+		}
 	}
 	const checkForCompletion = async () => {
 		//will throw an error if the results are not ready, causing the backoff to retry
