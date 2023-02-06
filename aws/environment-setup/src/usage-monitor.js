@@ -39,7 +39,7 @@ async function queryCloudfront(apis, accountId, dates, stackName, stackResourceN
 	let results = await queryAthena(athena, tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
 	let parsedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
 		let result = mapsToArray(Data)
-		let [status, date, sourceIp, method, count] = result
+		let [status, date, sourceIp, method, geoBlocked, count] = result
 		let event = `${method} ${status}`
 		return {
 			accountId,
@@ -48,7 +48,8 @@ async function queryCloudfront(apis, accountId, dates, stackName, stackResourceN
 			date,
 			count,
 			event,
-			sourceIp
+			sourceIp,
+			geoBlocked
 		}
 	})
 	return parsedResults
@@ -139,10 +140,13 @@ function formatResults(resultsFormatter, allResults, ipInfo, errors) {
 
 function formatResultsForLog(allResults, ipInfo) {
 	let formattedResults = allResults
-		.map(
-			result =>
-				`${result.accountId}/${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp} (${result.risk} ip risk)`
-		)
+		.map(result => {
+			let blockString = ''
+			if (result.geoBlocked) {
+				blockString = `, ${result.geoBlocked}`
+			}
+			return `${result.accountId}/${result.stackName}/${result.stackResourceName} ${result.date} (${result.count}): ${result.event}, ${result.sourceIp} (${result.risk} ip risk${blockString})`
+		})
 		.join('\n')
 	return formattedResults
 }
@@ -159,16 +163,20 @@ function formatResultsForEmail(allResults, ipInfo) {
 				result => stackDisplay == `${result.accountId} / ${result.stackName} / ${result.stackResourceName}`
 			)
 			let ipsToCount = stackResults.reduce((ipsToCount, stackResult) => {
-				let {count, sourceIp} = stackResult
+				let {count, sourceIp, geoBlocked} = stackResult
 				let ipDescriptor = sourceIp
 				if (sourceIp in ipInfo) {
 					let {description, risk} = ipInfo[sourceIp]
+					risk = `${risk} risk`
+					if (geoBlocked) {
+						risk = `${risk} (${geoBlocked})`
+					}
 					let descriptionRegex = /^([^\(]+\()AS\d+ (.+\))$/
 					let regexMatch = description.match(descriptionRegex)
 					if (regexMatch != null) {
 						description = `${regexMatch[1]}${regexMatch[2]}`
 					}
-					ipDescriptor = `${risk} risk: ${description}`
+					ipDescriptor = `${risk}: ${description}`
 				}
 				if (!(ipDescriptor in ipsToCount)) {
 					ipsToCount[ipDescriptor] = 0

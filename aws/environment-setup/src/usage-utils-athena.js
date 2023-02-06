@@ -58,11 +58,13 @@ export async function initialiseAthena(athena, tableName, bucket, stack, resourc
 }
 
 export async function queryAthena(athena, tableName, startDate, endDate) {
-	let sql = `SELECT status, date, request_ip, method, count(*) as count
-	FROM default.${safeTableName(tableName)}
-	WHERE "date" BETWEEN DATE '${startDate}' AND DATE '${endDate}'
-	and uri != '/favicon.ico'
-	group by status, date, request_ip, method`
+	let sql = `SELECT *, count(*) as count from (
+		select status, date, request_ip, method, IF(x_edge_detailed_result_type = 'ClientGeoBlocked', 'GeoBlocked') as geoBlocked
+		FROM default.${safeTableName(tableName)}
+		WHERE "date" BETWEEN DATE '${startDate}' AND DATE '${endDate}'
+		and uri != '/favicon.ico'
+	)
+	group by status, date, request_ip, geoBlocked, method`
 	return await executeAthenaQuery(athena, sql)
 }
 
