@@ -1,3 +1,5 @@
+/* This function duplicates some features of AWS Config - however AWS Config is expensive for reporting on just these items. */
+
 import {parse as csvParse} from 'csv-parse/sync'
 import backOff from 'exponential-backoff'
 
