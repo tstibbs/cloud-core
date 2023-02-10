@@ -1,13 +1,6 @@
-import {strict as assert} from 'assert'
 import {writeFile} from 'fs/promises'
 
-import aws from 'aws-sdk'
-aws.config.region = 'eu-west-2'
-aws.config.apiVersions = {
-	s3: '2006-03-01'
-}
-
-const s3 = new aws.S3()
+import {S3Sync} from './s3-sync.js'
 
 export class IndexGenerator {
 	#defaults = {
@@ -15,14 +8,13 @@ export class IndexGenerator {
 		fileIcon: '&#128462;',
 		openFileGenerator: this.#generateOpenFileHtml
 	}
-
-	#bucketName
 	#basePath
+	#s3Sync
 	#options
 
 	constructor(bucketName, basePath, options) {
-		this.#bucketName = bucketName
 		this.#basePath = basePath
+		this.#s3Sync = new S3Sync(bucketName, 'TODO', basePath)
 		this.#options = {
 			...this.#defaults,
 			...options
@@ -30,43 +22,16 @@ export class IndexGenerator {
 	}
 
 	async upload(fileName, body, contentType) {
-		let uploadResponse = await s3
-			.upload({
-				Bucket: this.#bucketName,
-				Key: `${this.#basePath}/${fileName}`,
-				Body: body,
-				ContentType: contentType
-			})
-			.promise()
-		assert.notEqual(uploadResponse.Location, null)
-		assert.notEqual(uploadResponse.Location, undefined)
+		await this.#s3Sync.upload(fileName, body, contentType)
 	}
 
 	async #listPaths() {
-		let response = await s3
-			.listObjectsV2({
-				Bucket: this.#bucketName,
-				Prefix: this.#basePath
-			})
-			.promise()
-
-		if (response.IsTruncated) {
-			console.error(
-				`More than ${response.MaxKeys} objects in bucket, you probably don't want to generate an index page for that.`
-			)
-			process.exit(2)
-		}
-
-		let keys = response.Contents.filter(({Key}) => !Key.endsWith('index.html')) //ignore any pre-existing index page
+		let keys = await this.#s3Sync.listRemotePaths() //run lister again, so that even if parts of the sync failed, we still build an index page for the actual state
+		keys = keys.filter(key => !key.endsWith('index.html')) //ignore any pre-existing index page
 		console.log(`Building index of ${keys.length} files.`)
 		let paths = {}
-		keys.forEach(({Key: key}) => {
+		keys.forEach(key => {
 			let components = key.split('/')
-			if (components[0] == this.#basePath) {
-				components.splice(0, 1) //drop first element
-			} else {
-				components = ['..', ...components] //not really expected but at least means it won't blow up, and the '..' should make it obvious that something unexpected has happened
-			}
 			let directories = components.slice(0, components.length - 1)
 			let currentPaths = paths
 			directories.forEach(component => {
@@ -85,7 +50,7 @@ export class IndexGenerator {
 		const htmlEntries = []
 		Object.entries(folderPaths).forEach(([name, value]) => {
 			if (typeof value === 'string') {
-				htmlEntries.push(this.#generateFileHtml(depth, name, value))
+				htmlEntries.push(this.#generateFileHtml(depth, name, `${this.#basePath}/${value}`))
 			} else {
 				htmlEntries.push(this.#generateFolderHtml(depth, name))
 				htmlEntries.push(...this.#generateEntriesHtml(depth + 1, value))
@@ -138,6 +103,7 @@ export class IndexGenerator {
 	}
 
 	async updateIndexPage(localTestOutputFile) {
+		await this.#s3Sync.sync()
 		let html = await this.#generateIndexPage()
 		if (localTestOutputFile != null) {
 			await writeFile(localTestOutputFile, html)
