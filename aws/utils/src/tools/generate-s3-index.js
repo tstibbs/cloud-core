@@ -12,9 +12,9 @@ export class IndexGenerator {
 	#s3Sync
 	#options
 
-	constructor(bucketName, basePath, options) {
+	constructor(localPath, bucketName, basePath, options) {
 		this.#basePath = basePath
-		this.#s3Sync = new S3Sync(bucketName, 'TODO', basePath)
+		this.#s3Sync = new S3Sync(bucketName, localPath, basePath)
 		this.#options = {
 			...this.#defaults,
 			...options
