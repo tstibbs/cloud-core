@@ -4,8 +4,8 @@ import {S3Sync} from './s3-sync.js'
 
 export class IndexGenerator {
 	#defaults = {
-		folderIcon: '&#128449;',
-		fileIcon: '&#128462;',
+		folderIcon: 'fa-folder-open-o',
+		fileIcon: 'fa-file-o',
 		openFileGenerator: this.#generateOpenFileHtml
 	}
 	#basePath
@@ -64,15 +64,15 @@ export class IndexGenerator {
 	}
 
 	#generateFolderHtml(depth, name) {
-		return `<div>${this.#indent(depth)}<span class="icon">${
+		return `<div>${this.#indent(depth)}<span class="icon"><i class="fa fa-fw ${
 			this.#options.folderIcon
-		}</span>&nbsp;<span>${name}</span></div>`
+		}" aria-hidden="true"></i></span>&nbsp;<span>${name}</span></div>`
 	}
 
 	#generateFileHtml(depth, name, filePath) {
-		return `<div>${this.#indent(depth)}<a class="icon" download href="/${filePath}">${
+		return `<div>${this.#indent(depth)}<a class="icon" download href="/${filePath}"><i class="fa fa-fw ${
 			this.#options.fileIcon
-		}</a>&nbsp;${this.#options.openFileGenerator(filePath, name)}</div>`
+		}" aria-hidden="true"></i></a>&nbsp;${this.#options.openFileGenerator(filePath, name)}</div>`
 	}
 
 	#generateOpenFileHtml(filePath, name) {
@@ -85,13 +85,14 @@ export class IndexGenerator {
 
 		let html = `<html>
 		<head>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 		<style>
+		body {
+			white-space: nowrap;
+		}
 		.icon {
 			text-decoration: none; 
 			color: black; 
-			width: 23px;
-			display: inline-block;
-			text-align: center;
 		}
 		</style>
 		</head>
