@@ -6,7 +6,7 @@ export class IndexGenerator {
 	#defaults = {
 		folderIcon: 'fa-folder-open-o',
 		fileIcon: 'fa-file-o',
-		openFileGenerator: this.#generateOpenFileHtml
+		openFileGenerator: this.#generateOpenFileHtmlSnippet
 	}
 	#basePath
 	#s3Sync
@@ -72,10 +72,19 @@ export class IndexGenerator {
 	#generateFileHtml(depth, name, filePath) {
 		return `<div>${this.#indent(depth)}<a class="icon" download href="/${filePath}"><i class="fa fa-fw ${
 			this.#options.fileIcon
-		}" aria-hidden="true"></i></a>&nbsp;${this.#options.openFileGenerator(filePath, name)}</div>`
+		}" aria-hidden="true"></i></a>&nbsp;${this.#generateOpenFileHtml(filePath, name)}</div>`
 	}
 
 	#generateOpenFileHtml(filePath, name) {
+		let snippet = this.#options.openFileGenerator(filePath, name)
+		if (snippet === undefined) {
+			//downstream code can trigger a fallback to the default method by returning 'undefined'
+			snippet = this.#generateOpenFileHtmlSnippet(filePath, name)
+		}
+		return snippet
+	}
+
+	#generateOpenFileHtmlSnippet(filePath, name) {
 		return `<a href="/${filePath}">${name}</a>`
 	}
 
