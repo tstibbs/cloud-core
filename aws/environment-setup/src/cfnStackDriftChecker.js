@@ -63,15 +63,8 @@ async function checkOneStack(cloudformation, stackName) {
 		driftStatus = statusResponse.StackDriftStatus
 		if (statusResponse.StackDriftStatus == driftStatusDrifted) {
 			//if 'drifted' then apply extra filtering because cloudformation drift detection is fundamentally broken (see https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/791)
-			let resourceDrifts = await cloudformation
-				.describeStackResourceDrifts({
-					StackName: stackName,
-					StackResourceDriftStatusFilters: ['MODIFIED']
-				})
-				.promise()
-			console.log(JSON.stringify(resourceDrifts, null, 2))
-			assertNotPaging(resourceDrifts)
-			if (diffsAreAcceptable(resourceDrifts.StackResourceDrifts)) {
+			let acceptable = await checkOneStackDriftsAcceptable(cloudformation, stackName)
+			if (acceptable) {
 				driftStatus = driftStatusInSync
 			}
 		}
@@ -83,6 +76,18 @@ async function checkOneStack(cloudformation, stackName) {
 		stackName,
 		driftStatus
 	}
+}
+
+export async function checkOneStackDriftsAcceptable(cloudformation, stackName) {
+	let resourceDrifts = await cloudformation
+		.describeStackResourceDrifts({
+			StackName: stackName,
+			StackResourceDriftStatusFilters: ['MODIFIED'] //TODO should include 'DELETED'
+		})
+		.promise()
+	console.log(JSON.stringify(resourceDrifts, null, 2))
+	assertNotPaging(resourceDrifts)
+	return diffsAreAcceptable(resourceDrifts.StackResourceDrifts)
 }
 
 function deletedStacksFilter(summary) {
