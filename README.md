@@ -2,6 +2,8 @@
 [![GitHub issues](https://img.shields.io/github/issues/tstibbs/cloud-core)](https://github.com/tstibbs/cloud-core/issues)
 [![License: AL 2](https://img.shields.io/github/license/tstibbs/cloud-core)](LICENSE)
 
+## What is this?
+
 This project is a collection of scripts and utilities for cloud stuff, either for managing my AWS organisation or utilities that are used in multiple other projects.
 
 ### AWS account set up
@@ -18,3 +20,7 @@ Also includes:
 
 - Instructions for setting up a new account added to an organisation: [aws/environment-setup/NewAccountSteps.md](aws/environment-setup/NewAccountSteps.md)
 - Code shared across various projects, e.g. [aws/utils/src/stacks/cloudfront.js](aws/utils/src/stacks/cloudfront.js) and [ui/templates](ui/templates)
+
+## Contributing
+
+PRs are very welcome, but for any big changes or new features please open an issue to discuss first.
