@@ -166,17 +166,17 @@ function formatResultsForEmail(allResults, ipInfo) {
 				let {count, sourceIp, geoBlocked} = stackResult
 				let ipDescriptor = sourceIp
 				if (sourceIp in ipInfo) {
-					let {description, risk} = ipInfo[sourceIp]
+					let {shortDescription, risk} = ipInfo[sourceIp]
 					risk = `${risk} risk`
 					if (geoBlocked) {
 						risk = `${risk} (${geoBlocked})`
 					}
 					let descriptionRegex = /^([^\(]+\()AS\d+ (.+\))$/
-					let regexMatch = description.match(descriptionRegex)
+					let regexMatch = shortDescription.match(descriptionRegex)
 					if (regexMatch != null) {
-						description = `${regexMatch[1]}${regexMatch[2]}`
+						shortDescription = `${regexMatch[1]}${regexMatch[2]}`
 					}
-					ipDescriptor = `${risk}: ${description}`
+					ipDescriptor = `${risk}: ${shortDescription}`
 				}
 				if (!(ipDescriptor in ipsToCount)) {
 					ipsToCount[ipDescriptor] = 0

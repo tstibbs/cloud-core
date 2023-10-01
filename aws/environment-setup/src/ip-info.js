@@ -37,11 +37,13 @@ export async function getIpInfo(ips) {
 					risk = 'medium'
 				}
 				let description = `${entry.country} > ${entry.region} > ${entry.city} (${entry.org})`
+				let shortDescription = `${entry.country} (${entry.org})`
 				return [
 					ip,
 					{
 						risk,
-						description
+						description,
+						shortDescription
 					}
 				]
 			})
