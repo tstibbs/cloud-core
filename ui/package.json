@@ -3,14 +3,14 @@
 	"version": "0.0.1",
 	"private": true,
 	"engines": {
-		"node": ">=16",
-		"npm": ">=8"
+		"node": ">=20",
+		"npm": ">=10"
 	},
 	"type": "module",
 	"files": [
 		"*.js"
 	],
 	"dependencies": {
-		"ejs": "^3.1.8"
+		"ejs": "^3.1.9"
 	}
 }

@@ -1,4 +1,4 @@
-FROM node:16-alpine
+FROM node:20-alpine
 
 ENV NPM_CONFIG_ENGINE_STRICT=true
 

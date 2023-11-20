@@ -2,12 +2,12 @@
 	"name": "@tstibbs/cloud-core-root",
 	"private": true,
 	"engines": {
-		"node": ">=16",
-		"npm": ">=8"
+		"node": ">=20",
+		"npm": ">=10"
 	},
 	"devDependencies": {
-		"lint-staged": "^13.0.3",
-		"prettier": "^2.7.1"
+		"lint-staged": "^14.0.1",
+		"prettier": "^3.0.3"
 	},
 	"scripts": {
 		"preinstall": "git config core.hooksPath .project/hooks"

@@ -18,3 +18,4 @@ for (let file of files) {
 	await import(file)
 }
 process.exitCode = 0 //because cli sets the exit code
+console.log('\nFinished.\n') //otherwise cli output makes it look like we've invoked this wrongly.

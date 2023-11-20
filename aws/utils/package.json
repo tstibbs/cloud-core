@@ -3,8 +3,8 @@
 	"version": "0.0.1",
 	"private": true,
 	"engines": {
-		"node": ">=16",
-		"npm": ">=8"
+		"node": ">=20",
+		"npm": ">=10"
 	},
 	"type": "module",
 	"files": [
@@ -15,16 +15,16 @@
 		"cdk-tools": "./src/cdkTools/cli.js"
 	},
 	"dependencies": {
-		"aws-cdk": "^2.50.0",
-		"aws-cdk-lib": "^2.50.0",
-		"aws-sdk": "^2.1255.0",
-		"dotenv": "^16.0.3",
-		"es-main": "^1.2.0",
+		"aws-cdk": "^2.110.0",
+		"aws-cdk-lib": "^2.110.0",
+		"aws-sdk": "^2.1499.0",
+		"dotenv": "^16.3.1",
+		"es-main": "^1.3.0",
 		"node-watch-changes": "^2.0.3",
-		"yargs": "^17.6.2"
+		"yargs": "^17.7.2"
 	},
 	"devDependencies": {
-		"recursive-readdir-async": "^1.2.1"
+		"recursive-readdir-async": "^1.3.0"
 	},
 	"scripts": {
 		"test": "node test/import-all-files.js"
