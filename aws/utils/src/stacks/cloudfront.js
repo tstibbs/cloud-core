@@ -54,11 +54,12 @@ export class CloudFrontResources {
 		outputUsageStoreInfo(stack, distributionConstructId, logsBucket.bucketName, USAGE_TYPE_CLOUDFRONT)
 	}
 
-	addHttpApi(path, httpApi) {
+	//GET_HEAD is the default, but specifying it here for future compatibility
+	addHttpApi(path, httpApi, allowedMethods = AllowedMethods.ALLOW_GET_HEAD) {
 		const httpApiDomain = Fn.select(2, Fn.split('/', httpApi.url))
 		this.#distribution.addBehavior(path, new HttpOrigin(httpApiDomain), {
 			responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
-			allowedMethods: AllowedMethods.ALLOW_GET_HEAD, //GET_HEAD is the default, but specifying it here for future compatibility
+			allowedMethods: allowedMethods,
 			viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
 			cachePolicy: CachePolicy.CACHING_DISABLED,
 			originRequestPolicy: this.#originRequestPolicy
