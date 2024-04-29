@@ -6,6 +6,7 @@ import {Bucket, HttpMethods, BucketEncryption} from 'aws-cdk-lib/aws-s3'
 import {PolicyStatement} from 'aws-cdk-lib/aws-iam'
 import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs'
 import {Runtime} from 'aws-cdk-lib/aws-lambda'
+import {AllowedMethods} from 'aws-cdk-lib/aws-cloudfront'
 
 export class S3TempWebStorageResources {
 	#bucket
@@ -43,15 +44,18 @@ export class S3TempWebStorageResources {
 		}
 		this.#bucket = new Bucket(stack, 'filesBucket', bucketProps)
 
-		this.#httpApi = new HttpApi(stack, 'httpApi', {
-			apiName: `${Aws.STACK_NAME}-httpApi`,
-			corsPreflight: {
+		const httpApiProps = {
+			apiName: `${Aws.STACK_NAME}-httpApi`
+		}
+		if (corsAllowedOrigins != null) {
+			httpApiProps.corsPreflight = {
 				allowMethods: [CorsHttpMethod.GET],
 				allowOrigins: corsAllowedOrigins
 			}
-		})
+		}
+		this.#httpApi = new HttpApi(stack, 'httpApi', httpApiProps)
 
-		cloudFrontResources.addHttpApi(`${requestsUrlPrefix}/*`, this.#httpApi)
+		cloudFrontResources.addHttpApi(`${requestsUrlPrefix}/*`, this.#httpApi, AllowedMethods.ALLOW_ALL)
 
 		this.#buildHandler(stack, getItemUrlsEndpoint, 'get-item-urls', requestsUrlPrefix)
 	}
@@ -71,7 +75,7 @@ export class S3TempWebStorageResources {
 		let integration = new HttpLambdaIntegration(`${name}-integration`, handler)
 		this.#httpApi.addRoutes({
 			path: `/${requestsUrlPrefix}/${name}`,
-			methods: [HttpMethod.GET],
+			methods: [HttpMethod.POST],
 			integration: integration
 		})
 	}
