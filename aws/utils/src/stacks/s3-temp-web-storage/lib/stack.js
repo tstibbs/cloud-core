@@ -49,7 +49,7 @@ export class S3TempWebStorageResources {
 		}
 		if (corsAllowedOrigins != null) {
 			httpApiProps.corsPreflight = {
-				allowMethods: [CorsHttpMethod.GET],
+				allowMethods: [HttpMethods.POST],
 				allowOrigins: corsAllowedOrigins
 			}
 		}
