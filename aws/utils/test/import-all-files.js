@@ -3,7 +3,7 @@ import {fileURLToPath} from 'url'
 import {list} from 'recursive-readdir-async'
 import {strict as assert} from 'assert'
 
-const expectedNumberOfFiles = 13 //sanity check in case a change happens which breaks this test; update this if the number of files changes
+const expectedNumberOfFiles = 14 //sanity check in case a change happens which breaks this test; update this if the number of files changes
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '../src')
 let files = await list(dir)
