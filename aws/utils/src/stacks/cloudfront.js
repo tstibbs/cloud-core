@@ -31,8 +31,9 @@ const cloudFrontPassThroughHeaders = [
 export class CloudFrontResources {
 	#distribution
 	#originRequestPolicy
+	#responseHeaderPolicy
 
-	constructor(stack, denyCountries, defaultBehavior) {
+	constructor(stack, denyCountries, defaultBehavior, corsAllowedOrigins = null) {
 		const logsBucket = Bucket.fromBucketArn(stack, 'applicationLogsBucket', Fn.importValue(applicationLogsBucketRef))
 		const distributionConstructId = 'distribution'
 		const distributionProps = {
@@ -52,13 +53,27 @@ export class CloudFrontResources {
 
 		new CfnOutput(stack, 'distributionDomainName', {value: this.#distribution.distributionDomainName})
 		outputUsageStoreInfo(stack, distributionConstructId, logsBucket.bucketName, USAGE_TYPE_CLOUDFRONT)
+
+		this.#responseHeaderPolicy =
+			corsAllowedOrigins == null
+				? null
+				: new ResponseHeadersPolicy(stack, 'CorsResponseHeadersPolicy', {
+						comment: `The default ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT doesn't allow the client to pass Content-Type.`,
+						corsBehavior: {
+							accessControlAllowCredentials: false,
+							accessControlAllowHeaders: ['*'],
+							accessControlAllowMethods: AllowedMethods.ALLOW_ALL.methods,
+							accessControlAllowOrigins: corsAllowedOrigins,
+							originOverride: false
+						}
+				  })
 	}
 
 	//GET_HEAD is the default, but specifying it here for future compatibility
 	addHttpApi(path, httpApi, allowedMethods = AllowedMethods.ALLOW_GET_HEAD) {
 		const httpApiDomain = Fn.select(2, Fn.split('/', httpApi.url))
 		this.#distribution.addBehavior(path, new HttpOrigin(httpApiDomain), {
-			responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
+			responseHeadersPolicy: this.#responseHeaderPolicy,
 			allowedMethods: allowedMethods,
 			viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
 			cachePolicy: CachePolicy.CACHING_DISABLED,
@@ -70,7 +85,7 @@ export class CloudFrontResources {
 		const httpApiDomain = Fn.select(2, Fn.split('/', webSocketStage.baseApi.apiEndpoint))
 		this.#distribution.addBehavior(path, new HttpOrigin(httpApiDomain), {
 			originPath: webSocketStage.stageName,
-			responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
+			responseHeadersPolicy: this.#responseHeaderPolicy,
 			allowedMethods: AllowedMethods.ALLOW_GET_HEAD, //GET_HEAD is the default, but specifying it here for future compatibility
 			viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
 			cachePolicy: CachePolicy.CACHING_DISABLED,
