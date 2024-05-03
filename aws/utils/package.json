@@ -15,6 +15,8 @@
 		"cdk-tools": "./src/cdkTools/cli.js"
 	},
 	"dependencies": {
+		"@aws-cdk/aws-apigatewayv2-alpha": "^2.110.0-alpha.0",
+		"@aws-cdk/aws-apigatewayv2-integrations-alpha": "^2.110.0-alpha.0",
 		"aws-cdk": "^2.110.0",
 		"aws-cdk-lib": "^2.110.0",
 		"aws-sdk": "^2.1499.0",

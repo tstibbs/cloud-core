@@ -1,0 +1,1 @@
+This folder contains utilities for a common pattern where S3 is used as temporary storage for a website, and an apigateway provides access to get pre-signed s3 urls to access objects in the s3 bucket.
