@@ -1,12 +1,14 @@
-import {RemovalPolicy, CfnOutput} from 'aws-cdk-lib'
+import {RemovalPolicy, CfnOutput, Fn} from 'aws-cdk-lib'
 import {LogGroup} from 'aws-cdk-lib/aws-logs'
 import {SHARED_STACK_NAME} from './constants.js'
+import {Bucket} from 'aws-cdk-lib/aws-s3'
 
 export const apiGatewayCloudwatchRoleRef = `${SHARED_STACK_NAME}-apiGatewayCloudWatchRoleArn`
 export const applicationLogsBucketRef = `${SHARED_STACK_NAME}-applicationLogsBucketArn`
 export const OUTPUT_PREFIX = 'USAGETRACKING'
 export const USAGE_TYPE_LOG_GROUP = 'LogGroup'
 export const USAGE_TYPE_CLOUDFRONT = 'CloudFront'
+export const USAGE_TYPE_S3_ACCESS_LOGS = 'S3AccessLogs'
 
 const standardLogFormat = '$context.identity.sourceIp,$context.httpMethod $context.path,$context.requestId'
 const websocketLogFormat = '$context.identity.sourceIp,$context.eventType $context.routeKey,$context.requestId'
@@ -45,4 +47,8 @@ export function outputUsageStoreInfo(stack, name, source, type) {
 		type
 	}
 	new CfnOutput(stack, `${OUTPUT_PREFIX}${name}`, {value: JSON.stringify(usageOutputInfo)})
+}
+
+export function importLogsBucket(stack, uniqueName /*doesn't affect deployment, just has to be unique within CDK*/) {
+	return Bucket.fromBucketArn(stack, `applicationLogsBucket-${uniqueName}`, Fn.importValue(applicationLogsBucketRef))
 }

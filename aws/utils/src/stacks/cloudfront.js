@@ -11,9 +11,8 @@ import {
 	OriginRequestPolicy
 } from 'aws-cdk-lib/aws-cloudfront'
 import {HttpOrigin} from 'aws-cdk-lib/aws-cloudfront-origins'
-import {Bucket} from 'aws-cdk-lib/aws-s3'
 
-import {applicationLogsBucketRef, outputUsageStoreInfo, USAGE_TYPE_CLOUDFRONT} from './usage-tracking.js'
+import {importLogsBucket, outputUsageStoreInfo, USAGE_TYPE_CLOUDFRONT} from './usage-tracking.js'
 
 const cloudFrontPassThroughHeaders = [
 	'Sec-WebSocket-Key',
@@ -34,7 +33,7 @@ export class CloudFrontResources {
 	#responseHeaderPolicy
 
 	constructor(stack, denyCountries, defaultBehavior, corsAllowedOrigins = null) {
-		const logsBucket = Bucket.fromBucketArn(stack, 'applicationLogsBucket', Fn.importValue(applicationLogsBucketRef))
+		const logsBucket = importLogsBucket(stack, 'cloudfront')
 		const distributionConstructId = 'distribution'
 		const distributionProps = {
 			defaultBehavior: defaultBehavior,
@@ -66,7 +65,7 @@ export class CloudFrontResources {
 							accessControlAllowOrigins: corsAllowedOrigins,
 							originOverride: false
 						}
-				  })
+					})
 	}
 
 	//GET_HEAD is the default, but specifying it here for future compatibility

@@ -1,7 +1,7 @@
 import {fileURLToPath} from 'node:url'
 import {dirname, resolve} from 'node:path'
 
-import {Aws, RemovalPolicy, Duration, Fn} from 'aws-cdk-lib'
+import {Aws, Annotations, RemovalPolicy, Duration, Fn} from 'aws-cdk-lib'
 import {CfnAccount} from 'aws-cdk-lib/aws-apigateway'
 import {HttpLambdaIntegration} from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import {HttpApi, HttpMethod, CorsHttpMethod} from 'aws-cdk-lib/aws-apigatewayv2'
@@ -10,6 +10,8 @@ import {PolicyStatement} from 'aws-cdk-lib/aws-iam'
 import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs'
 import {Runtime} from 'aws-cdk-lib/aws-lambda'
 import {AllowedMethods} from 'aws-cdk-lib/aws-cloudfront'
+
+import {importLogsBucket, outputUsageStoreInfo, USAGE_TYPE_S3_ACCESS_LOGS} from '../../usage-tracking.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -23,6 +25,8 @@ export class S3TempWebStorageResources {
 			cloudWatchRoleArn: Fn.importValue('AllAccountsStack-apiGatewayCloudWatchRoleArn')
 		})
 
+		const accessLogsBucket = importLogsBucket(stack, 's3')
+		const bucketName = 'filesBucket'
 		let bucketProps = {
 			removalPolicy: RemovalPolicy.DESTROY,
 			encryption: BucketEncryption.S3_MANAGED,
@@ -36,7 +40,9 @@ export class S3TempWebStorageResources {
 					id: 'cleanup',
 					abortIncompleteMultipartUploadAfter: Duration.days(1)
 				}
-			]
+			],
+			serverAccessLogsBucket: accessLogsBucket,
+			serverAccessLogsPrefix: `${Aws.STACK_NAME}/${bucketName}`
 		}
 		if (corsAllowedOrigins != null) {
 			bucketProps.cors = [
@@ -47,7 +53,9 @@ export class S3TempWebStorageResources {
 				}
 			]
 		}
-		this.#bucket = new Bucket(stack, 'filesBucket', bucketProps)
+		this.#bucket = new Bucket(stack, bucketName, bucketProps)
+		Annotations.of(this.#bucket).acknowledgeWarning('@aws-cdk/aws-s3:accessLogsPolicyNotAdded')
+		outputUsageStoreInfo(stack, bucketName, accessLogsBucket.bucketName, USAGE_TYPE_S3_ACCESS_LOGS)
 
 		const httpApiProps = {
 			apiName: `${Aws.STACK_NAME}-httpApi`

@@ -1,5 +1,13 @@
 import {Stack, CfnOutput, RemovalPolicy} from 'aws-cdk-lib'
-import {Role, CompositePrincipal, ServicePrincipal, ArnPrincipal, ManagedPolicy} from 'aws-cdk-lib/aws-iam'
+import {
+	Role,
+	CompositePrincipal,
+	ServicePrincipal,
+	ArnPrincipal,
+	ManagedPolicy,
+	PolicyStatement,
+	Effect
+} from 'aws-cdk-lib/aws-iam'
 import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
 
 import {applyStandardTags} from '@tstibbs/cloud-core-utils'
@@ -67,6 +75,19 @@ function createApplicationDependencies(stack) {
 		removalPolicy: RemovalPolicy.DESTROY,
 		autoDeleteObjects: true
 	})
+	applicationLogsBucket.addToResourcePolicy(
+		new PolicyStatement({
+			effect: Effect.ALLOW,
+			actions: ['s3:PutObject'],
+			resources: [applicationLogsBucket.arnForObjects('*')],
+			principals: [new ServicePrincipal('logging.s3.amazonaws.com')],
+			conditions: {
+				StringEquals: {
+					'aws:SourceAccount': stack.account
+				}
+			}
+		})
+	)
 	new CfnOutput(stack, 'apiGatewayCloudWatchRoleArn', {
 		value: apiGatewayCloudWatchRole.roleArn,
 		exportName: `${apiGatewayCloudwatchRoleRef}${DEV_SUFFIX}`
