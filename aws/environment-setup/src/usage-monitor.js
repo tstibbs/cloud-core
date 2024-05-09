@@ -1,13 +1,19 @@
 import {buildMultiAccountLambdaHandler, publishNotification, buildApiForAccount} from './utils.js'
 import {USAGE_MONITOR_EVENT_AGE_DAYS, ATHENA_WORKGROUP_NAME} from './runtime-envs.js'
-import {initialiseAthena, queryAthena} from './usage-utils-athena.js'
+import {
+	initialiseAthena_CloudFront,
+	queryAthena_CloudFront,
+	initialiseAthena_S3AccessLogs,
+	queryAthena_S3AccessLogs
+} from './usage-utils-athena.js'
 import {fetchLogEntries} from './usage-utils-logs.js'
 import {USAGE_CHILD_ROLE_NAME} from './constants.js'
 import {getIpInfo} from './ip-info.js'
 import {
 	OUTPUT_PREFIX,
 	USAGE_TYPE_LOG_GROUP,
-	USAGE_TYPE_CLOUDFRONT
+	USAGE_TYPE_CLOUDFRONT,
+	USAGE_TYPE_S3_ACCESS_LOGS
 } from '@tstibbs/cloud-core-utils/src/stacks/usage-tracking.js'
 
 function fieldsArrayToMap(fields) {
@@ -34,9 +40,9 @@ async function queryCloudfront(apis, accountId, dates, stackName, stackResourceN
 	let endDate = timeToAthenaFormattedDate(dates.endTime)
 	let tableName = `cloudfrontlogs_${stackName}_${stackResourceName}`
 	//ensure the table exists
-	await initialiseAthena(athena, tableName, bucketName, stackName, stackResourceName, ATHENA_WORKGROUP_NAME)
+	await initialiseAthena_CloudFront(athena, tableName, bucketName, stackName, stackResourceName, ATHENA_WORKGROUP_NAME)
 	console.log('table created')
-	let results = await queryAthena(athena, tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
+	let results = await queryAthena_CloudFront(athena, tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
 	let parsedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
 		let result = mapsToArray(Data)
 		let [status, date, sourceIp, method, geoBlocked, count] = result
@@ -50,6 +56,40 @@ async function queryCloudfront(apis, accountId, dates, stackName, stackResourceN
 			event,
 			sourceIp,
 			geoBlocked
+		}
+	})
+	return parsedResults
+}
+
+async function queryS3AccessLogs(apis, accountId, dates, stackName, stackResourceName, bucketName) {
+	const {athena} = apis
+	let startDate = timeToAthenaFormattedDate(dates.startTime)
+	let endDate = timeToAthenaFormattedDate(dates.endTime)
+	let tableName = `s3accesslogs_${stackName}_${stackResourceName}`
+	//ensure the table exists
+	await initialiseAthena_S3AccessLogs(
+		athena,
+		tableName,
+		bucketName,
+		stackName,
+		stackResourceName,
+		ATHENA_WORKGROUP_NAME
+	)
+	console.log('table created')
+	let results = await queryAthena_S3AccessLogs(athena, tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
+	let parsedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
+		let result = mapsToArray(Data)
+		let [status, date, sourceIp, method, count] = result
+		let event = `${method} ${status}`
+		return {
+			accountId,
+			stackName,
+			stackResourceName,
+			date,
+			count,
+			event,
+			sourceIp,
+			geoBlocked: false
 		}
 	})
 	return parsedResults
@@ -98,6 +138,9 @@ async function processResources(accountId, now, stacks, apis) {
 			switch (resource.type) {
 				case USAGE_TYPE_CLOUDFRONT:
 					results = await queryCloudfront(apis, accountId, dates, stackName, resource.name, resource.source)
+					break
+				case USAGE_TYPE_S3_ACCESS_LOGS:
+					results = await queryS3AccessLogs(apis, accountId, dates, stackName, resource.name, resource.source)
 					break
 				case USAGE_TYPE_LOG_GROUP:
 					results = await queryLogGroup(apis, accountId, dates, stackName, resource.name, resource.source)

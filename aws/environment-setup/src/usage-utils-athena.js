@@ -10,7 +10,7 @@ function safeTableName(tableName) {
 	return tableName
 }
 
-function buildCreateTableStatement(tableName, bucket, stack, resourceName) {
+function buildCreateTableStatement_CloudFront(tableName, bucket, stack, resourceName) {
 	return `CREATE EXTERNAL TABLE IF NOT EXISTS \`default.${safeTableName(tableName)}\` (
 		\`date\` DATE,
 		time STRING,
@@ -52,12 +52,58 @@ function buildCreateTableStatement(tableName, bucket, stack, resourceName) {
 	TBLPROPERTIES ( 'skip.header.line.count'='2' )`
 }
 
-export async function initialiseAthena(athena, tableName, bucket, stack, resourceName) {
-	let sql = buildCreateTableStatement(tableName, bucket, stack, resourceName)
+function buildCreateTableStatement_S3AccessLogs(tableName, bucket, stack, resourceName) {
+	return `CREATE EXTERNAL TABLE IF NOT EXISTS \`default.${safeTableName(tableName)}\` (
+		bucketowner STRING, 
+		bucket_name STRING, 
+		requestdatetime STRING, 
+		remoteip STRING, 
+		requester STRING, 
+		requestid STRING, 
+		operation STRING, 
+		key STRING, 
+		request_uri STRING, 
+		httpstatus STRING, 
+		errorcode STRING, 
+		bytessent BIGINT, 
+		objectsize BIGINT, 
+		totaltime STRING, 
+		turnaroundtime STRING, 
+		referrer STRING, 
+		useragent STRING, 
+		versionid STRING, 
+		hostid STRING, 
+		sigv STRING, 
+		ciphersuite STRING, 
+		authtype STRING, 
+		endpoint STRING, 
+		tlsversion STRING,
+		accesspointarn STRING,
+		aclrequired STRING)
+	  ROW FORMAT SERDE 
+		'org.apache.hadoop.hive.serde2.RegexSerDe' 
+	  WITH SERDEPROPERTIES ( 
+		'input.regex'='([^ ]*) ([^ ]*) \\\\[(.*?)\\\\] ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) (\\"[^\\"]*\\"|-) (-|[0-9]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) (\\"[^\\"]*\\"|-) ([^ ]*)(?: ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*))?.*$') 
+	  STORED AS INPUTFORMAT 
+		'org.apache.hadoop.mapred.TextInputFormat' 
+	  OUTPUTFORMAT 
+		'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+	  LOCATION
+		's3://${bucket}/${stack}/${resourceName}/'
+	  `
+}
+
+export async function initialiseAthena_CloudFront(athena, tableName, bucket, stack, resourceName) {
+	let sql = buildCreateTableStatement_CloudFront(tableName, bucket, stack, resourceName)
 	return await executeAthenaQuery(athena, sql)
 }
 
-export async function queryAthena(athena, tableName, startDate, endDate) {
+export async function initialiseAthena_S3AccessLogs(athena, tableName, bucket, stack, resourceName) {
+	let sql = buildCreateTableStatement_S3AccessLogs(tableName, bucket, stack, resourceName)
+	return await executeAthenaQuery(athena, sql)
+}
+
+export async function queryAthena_CloudFront(athena, tableName, startDate, endDate) {
 	let sql = `SELECT *, count(*) as count from (
 		select status, date, request_ip, method, IF(x_edge_detailed_result_type = 'ClientGeoBlocked', 'GeoBlocked') as geoBlocked
 		FROM default.${safeTableName(tableName)}
@@ -65,6 +111,22 @@ export async function queryAthena(athena, tableName, startDate, endDate) {
 		and uri != '/favicon.ico'
 	)
 	group by status, date, request_ip, geoBlocked, method`
+	return await executeAthenaQuery(athena, sql)
+}
+
+export async function queryAthena_S3AccessLogs(athena, tableName, startDate, endDate) {
+	let sql = `SELECT *, count(*) as count from (
+		select 
+			httpstatus as status, 
+			format_datetime(parse_datetime(requestdatetime, 'dd/MMM/yyyy:HH:mm:ss Z' ), 'yyyy/MM/dd') as date, 
+			remoteip as request_ip,
+			operation as method
+		from default.${safeTableName(tableName)}
+		where authtype = 'QueryString'
+	)
+	group by status, date, request_ip, method`
+	//TODO set date limits somehow - but how do that when we have to parse everything to get the date? Wouldn't we load all data just to parse it and discard it
+	//WHERE "date" BETWEEN DATE '${startDate}' AND DATE '${endDate}'
 	return await executeAthenaQuery(athena, sql)
 }
 
