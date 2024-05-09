@@ -42,7 +42,7 @@ export class S3TempWebStorageResources {
 				}
 			],
 			serverAccessLogsBucket: accessLogsBucket,
-			serverAccessLogsPrefix: `${Aws.STACK_NAME}/${bucketName}`
+			serverAccessLogsPrefix: `${Aws.STACK_NAME}/${bucketName}/`
 		}
 		if (corsAllowedOrigins != null) {
 			bucketProps.cors = [
