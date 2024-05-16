@@ -40,11 +40,14 @@ function buildAccessLogSetting(parent, format) {
 	return logSetting
 }
 
-export function outputUsageStoreInfo(stack, name, source, type) {
+export function outputUsageStoreInfo(stack, name, source, type, splitReportingByUrlRoot = false) {
 	const usageOutputInfo = {
 		name,
 		source,
 		type
+	}
+	if (!!splitReportingByUrlRoot) {
+		usageOutputInfo.splitReportingByUrlRoot = splitReportingByUrlRoot
 	}
 	new CfnOutput(stack, `${OUTPUT_PREFIX}${name}`, {value: JSON.stringify(usageOutputInfo)})
 }

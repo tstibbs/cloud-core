@@ -6,7 +6,7 @@ import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
 import {CloudFrontResources} from './cloudfront.js'
 
 export class WebsiteResources extends CloudFrontResources {
-	constructor(stack, bucketResourceName, denyCountries) {
+	constructor(stack, bucketResourceName, denyCountries, splitReportingByUrlRoot = false) {
 		const websiteBucket = new Bucket(stack, bucketResourceName, {
 			removalPolicy: RemovalPolicy.DESTROY,
 			encryption: BucketEncryption.S3_MANAGED,
@@ -18,7 +18,7 @@ export class WebsiteResources extends CloudFrontResources {
 			allowedMethods: AllowedMethods.ALLOW_GET_HEAD, //GET_HEAD is the default, but specifying it here for future compatibility
 			viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY
 		}
-		super(stack, denyCountries, defaultBehavior)
+		super(stack, denyCountries, defaultBehavior, null, splitReportingByUrlRoot)
 
 		new CfnOutput(stack, 'bucketName', {value: websiteBucket.bucketName})
 	}

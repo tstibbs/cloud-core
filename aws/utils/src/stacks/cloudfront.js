@@ -32,7 +32,7 @@ export class CloudFrontResources {
 	#originRequestPolicy
 	#responseHeaderPolicy
 
-	constructor(stack, denyCountries, defaultBehavior, corsAllowedOrigins = null) {
+	constructor(stack, denyCountries, defaultBehavior, corsAllowedOrigins = null, splitReportingByUrlRoot = false) {
 		const logsBucket = importLogsBucket(stack, 'cloudfront')
 		const distributionConstructId = 'distribution'
 		const distributionProps = {
@@ -51,7 +51,13 @@ export class CloudFrontResources {
 		})
 
 		new CfnOutput(stack, 'distributionDomainName', {value: this.#distribution.distributionDomainName})
-		outputUsageStoreInfo(stack, distributionConstructId, logsBucket.bucketName, USAGE_TYPE_CLOUDFRONT)
+		outputUsageStoreInfo(
+			stack,
+			distributionConstructId,
+			logsBucket.bucketName,
+			USAGE_TYPE_CLOUDFRONT,
+			splitReportingByUrlRoot
+		)
 
 		this.#responseHeaderPolicy =
 			corsAllowedOrigins == null

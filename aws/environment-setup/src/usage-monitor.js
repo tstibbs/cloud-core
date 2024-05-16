@@ -34,7 +34,8 @@ function millisToFormattedDate(timeInMillis) {
 	return `${date.getUTCFullYear()}-${month}-${day}`
 }
 
-async function queryCloudfront(apis, accountId, dates, stackName, stackResourceName, bucketName) {
+async function queryCloudfront(apis, accountId, dates, stackName, resource) {
+	const {name: stackResourceName, source: bucketName} = resource
 	const {athena} = apis
 	let startDate = timeToAthenaFormattedDate(dates.startTime)
 	let endDate = timeToAthenaFormattedDate(dates.endTime)
@@ -45,9 +46,9 @@ async function queryCloudfront(apis, accountId, dates, stackName, stackResourceN
 	let results = await queryAthena_CloudFront(athena, tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
 	let parsedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
 		let result = mapsToArray(Data)
-		let [status, date, sourceIp, method, geoBlocked, count] = result
+		let [count, status, date, sourceIp, method, geoBlocked, uriRoot] = result
 		let event = `${method} ${status}`
-		return {
+		let values = {
 			accountId,
 			stackName,
 			stackResourceName,
@@ -57,11 +58,16 @@ async function queryCloudfront(apis, accountId, dates, stackName, stackResourceN
 			sourceIp,
 			geoBlocked
 		}
+		if (resource.splitReportingByUrlRoot) {
+			values.uriRoot = uriRoot
+		}
+		return values
 	})
 	return parsedResults
 }
 
-async function queryS3AccessLogs(apis, accountId, dates, stackName, stackResourceName, bucketName) {
+async function queryS3AccessLogs(apis, accountId, dates, stackName, resource) {
+	const {name: stackResourceName, source: bucketName} = resource
 	const {athena} = apis
 	let startDate = timeToAthenaFormattedDate(dates.startTime)
 	let endDate = timeToAthenaFormattedDate(dates.endTime)
@@ -79,7 +85,7 @@ async function queryS3AccessLogs(apis, accountId, dates, stackName, stackResourc
 	let results = await queryAthena_S3AccessLogs(athena, tableName, startDate, endDate, ATHENA_WORKGROUP_NAME)
 	let parsedResults = results.ResultSet.Rows.slice(1).map(({Data}) => {
 		let result = mapsToArray(Data)
-		let [status, date, sourceIp, method, count] = result
+		let [count, status, date, sourceIp, method] = result
 		let event = `${method} ${status}`
 		return {
 			accountId,
@@ -99,7 +105,8 @@ function mapsToArray(arrayOfMaps) {
 	return arrayOfMaps.map(map => Object.values(map).join(';'))
 }
 
-async function queryLogGroup(apis, accountId, dates, stackName, stackResourceName, logGroup) {
+async function queryLogGroup(apis, accountId, dates, stackName, resource) {
+	const {name: stackResourceName, source: logGroup} = resource
 	const {cloudWatchLogs} = apis
 	//supports any HTTP, WebSocket or REST API that has been configured with the log group settings from aws/utils/src/stacks/usage-tracking.js
 	let results = await fetchLogEntries(cloudWatchLogs, dates, logGroup)
@@ -137,13 +144,13 @@ async function processResources(accountId, now, stacks, apis) {
 			let results = []
 			switch (resource.type) {
 				case USAGE_TYPE_CLOUDFRONT:
-					results = await queryCloudfront(apis, accountId, dates, stackName, resource.name, resource.source)
+					results = await queryCloudfront(apis, accountId, dates, stackName, resource)
 					break
 				case USAGE_TYPE_S3_ACCESS_LOGS:
-					results = await queryS3AccessLogs(apis, accountId, dates, stackName, resource.name, resource.source)
+					results = await queryS3AccessLogs(apis, accountId, dates, stackName, resource)
 					break
 				case USAGE_TYPE_LOG_GROUP:
-					results = await queryLogGroup(apis, accountId, dates, stackName, resource.name, resource.source)
+					results = await queryLogGroup(apis, accountId, dates, stackName, resource)
 					break
 				default:
 					errors.push(resource)
@@ -195,16 +202,18 @@ function formatResultsForLog(allResults, ipInfo) {
 }
 
 function formatResultsForEmail(allResults, ipInfo) {
+	const createTitle = result => {
+		let prefix = `${result.accountId} / ${result.stackName} / ${result.stackResourceName}`
+		if (result.uriRoot != null) {
+			prefix = `${prefix} / ${result.uriRoot}`
+		}
+		return prefix
+	}
 	const uniques = (arr, extractor) => [...new Set(arr.map(extractor))].sort()
-	let stackDisplays = uniques(
-		allResults,
-		result => `${result.accountId} / ${result.stackName} / ${result.stackResourceName}`
-	)
+	let stackDisplays = uniques(allResults, createTitle)
 	let stackSummaries = stackDisplays
 		.map(stackDisplay => {
-			let stackResults = allResults.filter(
-				result => stackDisplay == `${result.accountId} / ${result.stackName} / ${result.stackResourceName}`
-			)
+			let stackResults = allResults.filter(result => stackDisplay == createTitle(result))
 			let ipsToCount = stackResults.reduce((ipsToCount, stackResult) => {
 				let {count, sourceIp, geoBlocked} = stackResult
 				let ipDescriptor = sourceIp

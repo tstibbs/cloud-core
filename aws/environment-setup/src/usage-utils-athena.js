@@ -104,18 +104,18 @@ export async function initialiseAthena_S3AccessLogs(athena, tableName, bucket, s
 }
 
 export async function queryAthena_CloudFront(athena, tableName, startDate, endDate) {
-	let sql = `SELECT *, count(*) as count from (
-		select status, date, request_ip, method, IF(x_edge_detailed_result_type = 'ClientGeoBlocked', 'GeoBlocked') as geoBlocked
+	let sql = `SELECT count(*) as count, *  from (
+		select status, date, request_ip, method, IF(x_edge_detailed_result_type = 'ClientGeoBlocked', 'GeoBlocked') as geoBlocked, regexp_extract(uri, '^/?([^/]+)/', 1) as uriRoot
 		FROM default.${safeTableName(tableName)}
 		WHERE "date" BETWEEN DATE '${startDate}' AND DATE '${endDate}'
 		and uri != '/favicon.ico'
 	)
-	group by status, date, request_ip, geoBlocked, method`
+	group by status, date, request_ip, geoBlocked, method, uriRoot`
 	return await executeAthenaQuery(athena, sql)
 }
 
 export async function queryAthena_S3AccessLogs(athena, tableName, startDate, endDate) {
-	let sql = `SELECT *, count(*) as count from (
+	let sql = `SELECT count(*) as count, * from (
 		select 
 			httpstatus as status, 
 			format_datetime(parse_datetime(requestdatetime, 'dd/MMM/yyyy:HH:mm:ss Z' ), 'yyyy/MM/dd') as date, 
