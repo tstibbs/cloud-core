@@ -116,17 +116,18 @@ export async function queryAthena_CloudFront(athena, tableName, startDate, endDa
 
 export async function queryAthena_S3AccessLogs(athena, tableName, startDate, endDate) {
 	let sql = `SELECT count(*) as count, * from (
-		select 
-			httpstatus as status, 
-			format_datetime(parse_datetime(requestdatetime, 'dd/MMM/yyyy:HH:mm:ss Z' ), 'yyyy/MM/dd') as date, 
-			remoteip as request_ip,
-			operation as method
-		from default.${safeTableName(tableName)}
-		where authtype = 'QueryString'
+		select * from (
+			select 
+				httpstatus as status, 
+				CAST(parse_datetime(requestdatetime, 'dd/MMM/yyyy:HH:mm:ss Z' ) AS date) as date, 
+				remoteip as request_ip,
+				operation as method
+			from default.${safeTableName(tableName)}
+			where authtype = 'QueryString'
+		)
+		where "date" BETWEEN DATE '${startDate}' AND DATE '${endDate}'
 	)
 	group by status, date, request_ip, method`
-	//TODO set date limits somehow - but how do that when we have to parse everything to get the date? Wouldn't we load all data just to parse it and discard it
-	//WHERE "date" BETWEEN DATE '${startDate}' AND DATE '${endDate}'
 	return await executeAthenaQuery(athena, sql)
 }
 
