@@ -6,13 +6,7 @@ import events from 'aws-cdk-lib/aws-events'
 import eventsTargets from 'aws-cdk-lib/aws-events-targets'
 import dynamodb from 'aws-cdk-lib/aws-dynamodb'
 
-import {
-	CHILD_ACCOUNTS,
-	RAW_CHILD_ACCOUNTS,
-	MAX_CREDENTIAL_AGE,
-	MAX_UNUSED_CREDENTIAL_DAYS,
-	DEV_SUFFIX
-} from './deploy-envs.js'
+import {CHILD_ACCOUNTS, RAW_CHILD_ACCOUNTS, MAX_CREDENTIAL_AGE, DEV_SUFFIX} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME} from './deploy-utils.js'
 import {MONITOR_STORE_SCHEMA} from '../src/constants.js'
 import {createParentUsageMonitorResources} from './deploy-shared-usage.js'
@@ -72,7 +66,6 @@ function createLambda(stack, notificationTopic) {
 			ALERTS_TOPIC: notificationTopic.topicArn,
 			CHILD_ACCOUNTS: RAW_CHILD_ACCOUNTS,
 			MAX_CREDENTIAL_AGE,
-			MAX_UNUSED_CREDENTIAL_DAYS,
 			MONITOR_TABLE_NAME: monitorStoreTable.tableName
 		},
 		memorySize: 128,

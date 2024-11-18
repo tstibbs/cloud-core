@@ -3,7 +3,7 @@
 import {parse as csvParse} from 'csv-parse/sync'
 import backOff from 'exponential-backoff'
 
-import {MAX_CREDENTIAL_AGE, MAX_UNUSED_CREDENTIAL_DAYS} from './runtime-envs.js'
+import {MAX_CREDENTIAL_AGE} from './runtime-envs.js'
 import {buildApiForAccount, buildMultiAccountLambdaHandler} from './utils.js'
 import {MonitorStore} from './monitor-store.js'
 
@@ -16,7 +16,6 @@ async function checkOneAccount(accountId) {
 	const issues = []
 	const now = Date.now()
 	const maxCredentialAge = MAX_CREDENTIAL_AGE //in days
-	const maxUnusedCredentialDays = MAX_UNUSED_CREDENTIAL_DAYS //in days
 	const iam = await buildApiForAccount(accountId, 'ParentAccountCliRole', 'IAM')
 
 	async function runChecks() {
@@ -42,7 +41,7 @@ async function checkOneAccount(accountId) {
 		rootMfaEnabled(rootUsers)
 		// check MFA enabled for all users with console access
 		consoleUsersMfaEnabled(nonRootUsers)
-		// Check no access keys older than x days and no credentials that have been unused for x days
+		// Check no access keys older than x days
 		checkCredentials(nonRootUsers)
 	}
 
@@ -72,15 +71,12 @@ async function checkOneAccount(accountId) {
 	function checkCredentials(nonRootUsers) {
 		nonRootUsers.forEach(user => {
 			if (user.password_enabled === 'true') {
-				dateMoreRecentThan(user, 'password_last_used', maxUnusedCredentialDays)
 				dateMoreRecentThan(user, 'password_last_changed', maxCredentialAge)
 			}
 			if (user.access_key_1_active === 'true') {
-				dateMoreRecentThan(user, 'access_key_1_last_used_date', maxUnusedCredentialDays)
 				dateMoreRecentThan(user, 'access_key_1_last_rotated', maxCredentialAge)
 			}
 			if (user.access_key_2_active === 'true') {
-				dateMoreRecentThan(user, 'access_key_2_last_used_date', maxUnusedCredentialDays)
 				dateMoreRecentThan(user, 'access_key_2_last_rotated', maxCredentialAge)
 			}
 		})
