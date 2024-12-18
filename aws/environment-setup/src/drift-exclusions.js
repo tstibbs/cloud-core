@@ -9,6 +9,16 @@ function isApiGatewayNullBody(drift) {
 	)
 }
 
+function isApiGatewayNullProps(drift) {
+	return (
+		drift.ResourceType == 'AWS::ApiGatewayV2::Integration' &&
+		drift.PropertyDifferences.every(diff => diff.ActualValue == 'null') &&
+		drift.PropertyDifferences.every(diff =>
+			['/PayloadFormatVersion', '/IntegrationUri', '/IntegrationType'].includes(diff.PropertyPath)
+		)
+	)
+}
+
 function isScheduleRetryPolicy(drift) {
 	// https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/956
 	return (
@@ -28,5 +38,13 @@ function isMissingTags(drift) {
 }
 
 export function diffsAreAcceptable(drifts) {
-	return drifts.every(drift => isMissingTags(drift) || isApiGatewayNullBody(drift) || isScheduleRetryPolicy(drift))
+	let unacceptable = drifts.filter(
+		drift =>
+			!isMissingTags(drift) &&
+			!isApiGatewayNullBody(drift) &&
+			!isScheduleRetryPolicy(drift) &&
+			!isApiGatewayNullProps(drift)
+	)
+	unacceptable.forEach(drift => console.log(drift))
+	return unacceptable.length == 0
 }
