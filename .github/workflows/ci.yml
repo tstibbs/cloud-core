@@ -8,7 +8,7 @@ env:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
 
@@ -46,5 +46,5 @@ jobs:
     - name: Set up environment for docker build
       run: mkdir example-container/app && cp -r *.js* node_modules example-container/app/
       working-directory: edge/iot
-    - run: docker-compose build
+    - run: docker compose build
       working-directory: edge/iot/example-container
