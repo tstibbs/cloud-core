@@ -12,9 +12,9 @@ export class IndexGenerator {
 	#s3Sync
 	#options
 
-	constructor(localPath, bucketName, basePath, options) {
+	constructor(localPath, bucketName, basePath, options, yargv = {}) {
 		this.#basePath = basePath
-		this.#s3Sync = new S3Sync(bucketName, localPath, basePath)
+		this.#s3Sync = new S3Sync(bucketName, localPath, basePath, yargv)
 		this.#options = {
 			...this.#defaults,
 			...options
@@ -120,5 +120,9 @@ export class IndexGenerator {
 		} else {
 			await this.upload('index.html', html, 'text/html')
 		}
+	}
+
+	static buildYargs(yargsInstance) {
+		return S3Sync.buildYargs(yargsInstance)
 	}
 }

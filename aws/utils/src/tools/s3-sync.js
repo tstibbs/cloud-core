@@ -13,17 +13,24 @@ aws.config.apiVersions = {
 
 const s3 = new aws.S3()
 
+const INCLUDE_SUFFIXES = 'include-suffixes'
+const EXCLUDE_SUFFIXES = 'exclude-suffixes'
+
 export class S3Sync {
 	#bucketName
 	#localPath
 	#subDirectoryPath
 	#toDelete
 	#toUpload
+	#includeSuffixes
+	#excludeSuffixes
 
-	constructor(bucketName, localPath, subDirectoryPath) {
+	constructor(bucketName, localPath, subDirectoryPath, yargv = {}) {
 		this.#bucketName = bucketName
 		this.#localPath = localPath
 		this.#subDirectoryPath = subDirectoryPath
+		this.#includeSuffixes = yargv[INCLUDE_SUFFIXES]
+		this.#excludeSuffixes = yargv[EXCLUDE_SUFFIXES]
 	}
 
 	async upload(fileName, body, contentType) {
@@ -60,7 +67,10 @@ export class S3Sync {
 				`keys returned that weren't within prefix path specified: ${objectsOutsideOfSubDirPath.join(',')}`
 			)
 		}
-		keys = keys.map(key => key.substring(this.#subDirectoryPath.length + 1))
+		keys = keys
+			.map(key => key.substring(this.#subDirectoryPath.length + 1))
+			.filter(file => this.#includeSuffixes == null || this.#suffixMatches(file, this.#includeSuffixes))
+			.filter(file => this.#excludeSuffixes == null || !this.#suffixMatches(file, this.#excludeSuffixes))
 		return keys
 	}
 
@@ -69,16 +79,25 @@ export class S3Sync {
 		assert.equal(files.error, undefined)
 		files = files
 			.map(file => file.fullname)
+			.filter(file => this.#includeSuffixes == null || this.#suffixMatches(file, this.#includeSuffixes))
+			.filter(file => this.#excludeSuffixes == null || !this.#suffixMatches(file, this.#excludeSuffixes))
 			.map(file => relative(this.#localPath, file))
 			.sort()
 		return files
+	}
+
+	#suffixMatches(file, suffixes) {
+		return suffixes.some(suf => file.endsWith(suf))
 	}
 
 	async runCompare() {
 		let remote = await this.listRemotePaths()
 		let local = await this.listLocalPaths()
 		//comparison method has high complexity, assumes order of 100s of files.
-		this.#toDelete = remote.filter(path => !local.includes(path))
+		this.#toDelete = remote
+			.filter(path => !local.includes(path))
+			//don't delete the index.html that we're just about to generate
+			.filter(path => path != 'index.html')
 		this.#toUpload = local.filter(path => !remote.includes(path))
 		let toIgnore = local.filter(path => remote.includes(path))
 		console.log(`toDelete: ${this.#toDelete.length}; toUpload: ${this.#toUpload.length}; toIgnore: ${toIgnore.length}`)
@@ -111,5 +130,17 @@ export class S3Sync {
 		await this.runCompare()
 		await this.syncAdds()
 		await this.syncDeletes()
+	}
+
+	static buildYargs(yargsInstance) {
+		return yargsInstance
+			.option(INCLUDE_SUFFIXES, {
+				describe: 'If specified, only sync files with one of these suffixes',
+				type: 'array'
+			})
+			.option(EXCLUDE_SUFFIXES, {
+				describe: "If specified, don't sync files with any of these suffixes",
+				type: 'array'
+			})
 	}
 }
