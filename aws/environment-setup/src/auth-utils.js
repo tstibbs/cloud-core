@@ -1,19 +1,27 @@
-import aws from 'aws-sdk'
-aws.config.update({region: 'eu-west-2'})
-aws.config.apiVersions = {
-	athena: '2017-05-18',
-	cloudformation: '2010-05-15',
-	cloudwatchlogs: '2014-03-28',
-	dynamodb: '2012-08-10',
-	iam: '2010-05-08',
-	iot: '2015-05-28',
-	s3: '2006-03-01',
-	sns: '2010-03-31',
-	sts: '2011-06-15'
+import {STS} from '@aws-sdk/client-sts'
+
+const awsDefaults = {region: 'eu-west-2'}
+const awsApiVersions = {
+	Athena: '2017-05-18',
+	CloudFormation: '2010-05-15',
+	CloudWatchLogs: '2014-03-28',
+	DynamoDB: '2012-08-10',
+	IAM: '2010-05-08',
+	IoT: '2015-05-28',
+	S3: '2006-03-01',
+	SNS: '2010-03-31',
+	STS: '2011-06-15'
+}
+
+export function defaultsForAwsService(serviceName) {
+	return {
+		...awsDefaults,
+		apiVersion: awsApiVersions[serviceName]
+	}
 }
 
 export async function assumeRole(roleArn) {
-	let sts = new aws.STS()
+	let sts = new STS(defaultsForAwsService('STS'))
 	let currentAuth = await sts.getCallerIdentity({}).promise()
 	let currentSessionName = currentAuth.Arn.split('/').slice(-1)[0]
 	let oldCreds = aws.config.credentials
@@ -25,5 +33,3 @@ export async function assumeRole(roleArn) {
 	})
 	return oldCreds
 }
-
-export {aws}

@@ -1,8 +1,7 @@
 import {randomUUID} from 'crypto'
 
-import {BUCKET, aws} from './utils.js'
+import {BUCKET, s3} from './utils.js'
 import {endpointFileNameParam, endpointPrefixesParam} from '../shared/constants.js'
-const s3 = new aws.S3()
 
 export async function handler(event) {
 	let {body} = event

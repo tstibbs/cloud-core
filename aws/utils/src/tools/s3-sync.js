@@ -4,14 +4,12 @@ import {relative} from 'path'
 import {readFile} from 'fs/promises'
 
 import {list} from 'recursive-readdir-async'
+import {S3} from '@aws-sdk/client-s3'
 
-import aws from 'aws-sdk'
-aws.config.region = 'eu-west-2'
-aws.config.apiVersions = {
-	s3: '2006-03-01'
-}
-
-const s3 = new aws.S3()
+const s3 = new S3({
+	region: 'eu-west-2',
+	apiVersion: '2006-03-01'
+})
 
 const INCLUDE_SUFFIXES = 'include-suffixes'
 const EXCLUDE_SUFFIXES = 'exclude-suffixes'

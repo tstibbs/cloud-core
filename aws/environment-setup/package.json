@@ -7,7 +7,16 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"aws-sdk": "^2.1612.0",
+		"@aws-sdk/client-athena": "^3.577.0",
+		"@aws-sdk/client-cloudformation": "^3.577.0",
+		"@aws-sdk/client-cloudwatch-logs": "^3.577.0",
+		"@aws-sdk/client-dynamodb": "^3.577.0",
+		"@aws-sdk/client-iam": "^3.577.0",
+		"@aws-sdk/client-iot": "^3.577.0",
+		"@aws-sdk/client-s3": "^3.726.1",
+		"@aws-sdk/client-sns": "^3.577.0",
+		"@aws-sdk/client-sts": "^3.577.0",
+		"@aws-sdk/lib-dynamodb": "^3.726.1",
 		"csv-parse": "^5.5.5",
 		"dotenv": "^16.4.5",
 		"exponential-backoff": "^3.1.1",
@@ -16,7 +25,6 @@
 		"node-ipinfo": "^3.5.1"
 	},
 	"devDependencies": {
-		"@aws-sdk/client-s3": "^3.568.0",
 		"@tstibbs/cloud-core-utils": "file:../utils",
 		"aws-cdk": "^2.140.0",
 		"aws-cdk-lib": "^2.140.0",
