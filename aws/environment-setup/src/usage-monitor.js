@@ -256,7 +256,7 @@ async function checkOneAccount(accountId) {
 		cloudWatchLogs
 	}
 	//get outputs from stacks
-	let listResult = await cloudformation.describeStacks().promise()
+	let listResult = await cloudformation.describeStacks()
 	let stacks = listResult.Stacks.map(stack => {
 		let resources = stack.Outputs.filter(output => output.OutputKey.startsWith(OUTPUT_PREFIX)).map(output =>
 			JSON.parse(output.OutputValue)

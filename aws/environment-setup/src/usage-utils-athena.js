@@ -137,7 +137,7 @@ async function executeAthenaQuery(athena, sql) {
 		QueryString: sql,
 		WorkGroup: INFRA_ATHENA_WORKGROUP_NAME
 	}
-	let startResults = await athena.startQueryExecution(params).promise()
+	let startResults = await athena.startQueryExecution(params)
 	let executionId = startResults.QueryExecutionId
 
 	//keep checking the status of the query until it's completed
@@ -156,11 +156,10 @@ async function executeAthenaQuery(athena, sql) {
 	const checkForCompletion = async () => {
 		//will throw an error if the results are not ready, causing the backoff to retry
 		console.log(`Checking results of query ${executionId}`)
-		let queryResponse = await athena
-			.getQueryResults({
-				QueryExecutionId: executionId
-			})
-			.promise()
+		let queryResponse = await athena.getQueryResults({
+			QueryExecutionId: executionId
+		})
+
 		assertNotPaging(queryResponse)
 		return queryResponse
 	}

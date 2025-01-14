@@ -6,7 +6,7 @@ import {publishNotification, buildSingleAccountLambdaHandler} from './utils.js'
 
 async function destroyStacks(invocationId) {
 	//get list of stacks
-	let listResult = await cloudformation.describeStacks().promise()
+	let listResult = await cloudformation.describeStacks()
 	let fetchTpPromises = listResult.Stacks.map(stack => getTpEnabled(stack.StackName))
 	let tpResults = await Promise.all(fetchTpPromises)
 	let tpEnabled = []
@@ -41,11 +41,10 @@ async function destroyStacks(invocationId) {
 }
 
 async function getTpEnabled(stackName) {
-	let listResult = await cloudformation
-		.describeStacks({
-			StackName: stackName
-		})
-		.promise()
+	let listResult = await cloudformation.describeStacks({
+		StackName: stackName
+	})
+
 	assertEqual(listResult.Stacks.length, 1)
 	return {
 		stackName,
@@ -55,11 +54,10 @@ async function getTpEnabled(stackName) {
 }
 
 async function destroyOneStack(stack) {
-	let requestResult = await cloudformation
-		.deleteStack({
-			StackName: stack.stackName
-		})
-		.promise()
+	let requestResult = await cloudformation.deleteStack({
+		StackName: stack.stackName
+	})
+
 	let initialStatus = requestResult.status
 	if (initialStatus == 'rejected') {
 		return 'request rejected'
@@ -70,11 +68,10 @@ async function destroyOneStack(stack) {
 			startingDelay: 10 * 1000 // 10 seconds
 		}
 		const checkForCompletion = async () => {
-			let describeResult = await cloudformation
-				.describeStacks({
-					StackName: stack.stackId
-				})
-				.promise()
+			let describeResult = await cloudformation.describeStacks({
+				StackName: stack.stackId
+			})
+
 			let status = describeResult.Stacks[0].StackStatus
 			console.log(`${stack.stackName}/${stack.stackId}: ${status}`)
 			if (status == initialStatus || status == 'DELETE_IN_PROGRESS') {

@@ -16,11 +16,10 @@ mean it will have nothing in, then it will error. Check here so we can return ze
 instead of trying to make an invalid query and then trying to catch the error. */
 async function isQueryInTimeRange(cloudWatchLogs, endTime, logGroupName) {
 	let endTimeInMillis = endTime * 1000
-	let result = await cloudWatchLogs
-		.describeLogGroups({
-			logGroupNamePrefix: logGroupName
-		})
-		.promise()
+	let result = await cloudWatchLogs.describeLogGroups({
+		logGroupNamePrefix: logGroupName
+	})
+
 	assertNotPaging(result)
 	assert.strictEqual(result.logGroups.length, 1, `Expected exactly a single log group with this name`)
 	let logGroup = result.logGroups[0]
@@ -39,14 +38,12 @@ export async function fetchLogEntries(cloudWatchLogs, dates, logGroup) {
 	if ((await isQueryInTimeRange(cloudWatchLogs, dates.endTime, logGroup)) == false) {
 		return []
 	} else {
-		let {queryId} = await cloudWatchLogs
-			.startQuery({
-				queryString: QUERY,
-				endTime: dates.endTime,
-				startTime: dates.startTime,
-				logGroupName: logGroup
-			})
-			.promise()
+		let {queryId} = await cloudWatchLogs.startQuery({
+			queryString: QUERY,
+			endTime: dates.endTime,
+			startTime: dates.startTime,
+			logGroupName: logGroup
+		})
 
 		//keep checking the status of the query until it's completed
 		const backoffParams = {
@@ -54,11 +51,10 @@ export async function fetchLogEntries(cloudWatchLogs, dates, logGroup) {
 			startingDelay: 2 * 1000 // 2 seconds
 		}
 		const checkForCompletion = async () => {
-			let queryResponse = await cloudWatchLogs
-				.getQueryResults({
-					queryId: queryId
-				})
-				.promise()
+			let queryResponse = await cloudWatchLogs.getQueryResults({
+				queryId: queryId
+			})
+
 			if (queryResponse.status != QUERY_COMPLETE) {
 				throw new Error(`status=${queryResponse.status}`) // throwing error causes backoff to retry, though if not 'running' or 'scheduled' then it's unlikely to change
 			} else {

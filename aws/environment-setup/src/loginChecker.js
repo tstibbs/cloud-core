@@ -25,12 +25,11 @@ async function processEvent(event) {
 	console.log(`srcBucket: ${srcBucket}`)
 	console.log(`srcKey: ${srcKey}`)
 
-	let s3Response = await s3
-		.getObject({
-			Bucket: srcBucket,
-			Key: srcKey
-		})
-		.promise()
+	let s3Response = await s3.getObject({
+		Bucket: srcBucket,
+		Key: srcKey
+	})
+
 	console.log('got s3 object')
 	let raw = await gunzip(s3Response.Body)
 	let records = JSON.parse(raw)

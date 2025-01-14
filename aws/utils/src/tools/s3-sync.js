@@ -32,25 +32,21 @@ export class S3Sync {
 	}
 
 	async upload(fileName, body, contentType) {
-		let uploadResponse = await s3
-			.upload({
-				Bucket: this.#bucketName,
-				Key: `${this.#subDirectoryPath}/${fileName}`,
-				Body: body,
-				ContentType: contentType
-			})
-			.promise()
+		let uploadResponse = await s3.upload({
+			Bucket: this.#bucketName,
+			Key: `${this.#subDirectoryPath}/${fileName}`,
+			Body: body,
+			ContentType: contentType
+		})
 		assert.notEqual(uploadResponse.Location, null)
 		assert.notEqual(uploadResponse.Location, undefined)
 	}
 
 	async listRemotePaths() {
-		let response = await s3
-			.listObjectsV2({
-				Bucket: this.#bucketName,
-				Prefix: this.#subDirectoryPath
-			})
-			.promise()
+		let response = await s3.listObjectsV2({
+			Bucket: this.#bucketName,
+			Prefix: this.#subDirectoryPath
+		})
 
 		if (response.IsTruncated) {
 			console.error(
@@ -120,7 +116,7 @@ export class S3Sync {
 					Objects: objectsToDelete
 				}
 			}
-			await s3.deleteObjects(params).promise()
+			await s3.deleteObjects(params)
 		}
 	}
 

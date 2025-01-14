@@ -26,7 +26,7 @@ export class MonitorStore {
 			}
 		}
 
-		let data = await dydbDocClient.scan(params).promise()
+		let data = await dydbDocClient.scan(params)
 		return data.Items.map(item => JSON.parse(item.obj))
 	}
 
@@ -52,7 +52,7 @@ export class MonitorStore {
 			}
 		}
 
-		await dydbDocClient.batchWrite(params).promise()
+		await dydbDocClient.batchWrite(params)
 	}
 
 	async _resolveIssues(currentIssues) {

@@ -98,7 +98,7 @@ async function checkOneAccount(accountId) {
 		//if not ready, `iam.getCredentialReport()` will throw an error with a 'ReportInProgress' code which will cause the backoff to happen anyway
 		const runDelegate = async () => {
 			try {
-				return await iam[delegate].bind(iam)().promise()
+				return await iam[delegate].bind(iam)()
 			} catch (e) {
 				console.error(`error making retryable call for ${delegate}`)
 				console.error(e)

@@ -22,7 +22,7 @@ export function defaultsForAwsService(serviceName) {
 
 export async function assumeRole(roleArn) {
 	let sts = new STS(defaultsForAwsService('STS'))
-	let currentAuth = await sts.getCallerIdentity({}).promise()
+	let currentAuth = await sts.getCallerIdentity({})
 	let currentSessionName = currentAuth.Arn.split('/').slice(-1)[0]
 	let oldCreds = aws.config.credentials
 	aws.config.credentials = new aws.ChainableTemporaryCredentials({
