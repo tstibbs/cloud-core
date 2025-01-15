@@ -1,5 +1,8 @@
 import {randomUUID} from 'crypto'
 
+import {getSignedUrl} from '@aws-sdk/s3-request-presigner'
+import {GetObjectCommand, PutObjectCommand} from '@aws-sdk/client-s3'
+
 import {BUCKET, s3} from './utils.js'
 import {endpointFileNameParam, endpointPrefixesParam} from '../shared/constants.js'
 
@@ -28,9 +31,9 @@ export async function handler(event) {
 	const randomizer = randomUUID() //prevents object names in the bucket being predictable, and also prevents clashes by different files that are named the same
 	const prefix = prefixes != null && prefixes.length > 0 ? [...prefixes, ''].join('/') : ''
 	const key = `${prefix}${fileName}-${randomizer}`
-	const sign = async operation => await s3.getSignedUrlPromise(operation, {Bucket: BUCKET, Key: key})
-	const getUrl = await sign('getObject')
-	const putUrl = await sign('putObject')
+	const sign = async operation => await getSignedUrl(s3, new operation({Bucket: BUCKET, Key: key}))
+	const getUrl = await sign(GetObjectCommand)
+	const putUrl = await sign(PutObjectCommand)
 
 	return {
 		getUrl,

@@ -5,11 +5,11 @@ import {readFile} from 'fs/promises'
 
 import {list} from 'recursive-readdir-async'
 import {S3} from '@aws-sdk/client-s3'
+import {Upload} from '@aws-sdk/lib-storage'
 
-const s3 = new S3({
-	region: 'eu-west-2',
-	apiVersion: '2006-03-01'
-})
+import {defaultAwsClientConfig} from './aws-client-config.js'
+
+const s3 = new S3(defaultAwsClientConfig)
 
 const INCLUDE_SUFFIXES = 'include-suffixes'
 const EXCLUDE_SUFFIXES = 'exclude-suffixes'
@@ -32,12 +32,15 @@ export class S3Sync {
 	}
 
 	async upload(fileName, body, contentType) {
-		let uploadResponse = await s3.upload({
-			Bucket: this.#bucketName,
-			Key: `${this.#subDirectoryPath}/${fileName}`,
-			Body: body,
-			ContentType: contentType
-		})
+		let uploadResponse = await new Upload({
+			client: s3,
+			params: {
+				Bucket: this.#bucketName,
+				Key: `${this.#subDirectoryPath}/${fileName}`,
+				Body: body,
+				ContentType: contentType
+			}
+		}).done()
 		assert.notEqual(uploadResponse.Location, null)
 		assert.notEqual(uploadResponse.Location, undefined)
 	}
