@@ -2,6 +2,7 @@
 
 import {parse as csvParse} from 'csv-parse/sync'
 import backOff from 'exponential-backoff'
+import {IAMClient} from '@aws-sdk/client-iam'
 
 import {MAX_CREDENTIAL_AGE} from './runtime-envs.js'
 import {buildApiForAccount, buildMultiAccountLambdaHandler} from './utils.js'
@@ -16,7 +17,7 @@ async function checkOneAccount(accountId) {
 	const issues = []
 	const now = Date.now()
 	const maxCredentialAge = MAX_CREDENTIAL_AGE //in days
-	const iam = await buildApiForAccount(accountId, 'ParentAccountCliRole', 'IAM')
+	const iam = await buildApiForAccount(accountId, 'ParentAccountCliRole', IAMClient)
 
 	async function runChecks() {
 		await doWithBackoff('generateCredentialReport')

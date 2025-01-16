@@ -87,12 +87,8 @@ function getCurrentLambdaLogsLink() {
 }
 
 export async function buildApiForAccount(accountId, role, api) {
-	let oldCreds = await assumeRole(`arn:aws:iam::${accountId}:role/${role}`)
-	let cloudformation = new aws[api]()
-	// JS SDK v3 does not support global configuration.
-	// Codemod has attempted to pass values to each service client in this file.
-	// You may need to update clients outside of this file, if they use global config.
-	aws.config.credentials = oldCreds
+	let clientConfigWithCreds = await assumeRole(`arn:aws:iam::${accountId}:role/${role}`)
+	let cloudformation = new api(clientConfigWithCreds)
 	return cloudformation
 }
 

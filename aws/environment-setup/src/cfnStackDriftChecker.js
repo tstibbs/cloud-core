@@ -3,6 +3,8 @@ import _ from 'lodash'
 import assert from 'assert'
 import backOff from 'exponential-backoff'
 
+import {CloudFormation} from '@aws-sdk/client-cloudformation'
+
 import {buildApiForAccount, assertNotPaging, inSeries, buildMultiAccountLambdaHandler} from './utils.js'
 import {diffsAreAcceptable} from './drift-exclusions.js'
 import {MonitorStore} from './monitor-store.js'
@@ -103,7 +105,7 @@ function deletedStacksFilter(summary) {
 }
 
 async function checkOneAccount(accountId) {
-	let cloudformation = await buildApiForAccount(accountId, 'ParentAccountCliRole', 'CloudFormation')
+	let cloudformation = await buildApiForAccount(accountId, 'ParentAccountCliRole', CloudFormation)
 	let stackResponse = await cloudformation.listStacks({})
 	let stacks = stackResponse.StackSummaries.filter(deletedStacksFilter).map(summary => summary.StackName)
 	console.log(`Checking drift status for: ${accountId} / ${stacks}`)

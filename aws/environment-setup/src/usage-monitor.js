@@ -1,3 +1,7 @@
+import {Athena} from '@aws-sdk/client-athena'
+import {CloudFormation} from '@aws-sdk/client-cloudformation'
+import {CloudWatchLogs} from '@aws-sdk/client-cloudwatch-logs'
+
 import {buildMultiAccountLambdaHandler, publishNotification, buildApiForAccount} from './utils.js'
 import {USAGE_MONITOR_EVENT_AGE_DAYS, ATHENA_WORKGROUP_NAME} from './runtime-envs.js'
 import {
@@ -248,9 +252,9 @@ function formatResultsForEmail(allResults, ipInfo) {
 }
 
 async function checkOneAccount(accountId) {
-	const cloudformation = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, 'CloudFormation')
-	const athena = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, 'Athena')
-	const cloudWatchLogs = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, 'CloudWatchLogs')
+	const cloudformation = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, CloudFormation)
+	const athena = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, Athena)
+	const cloudWatchLogs = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, CloudWatchLogs)
 	const apis = {
 		athena,
 		cloudWatchLogs
