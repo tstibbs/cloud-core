@@ -79,6 +79,10 @@ if (showDebug) {
 		displayError.apply(outerThis, [message, file, error])
 	}
 	window.addEventListener('error', function (e) {
-		displayError.apply(outerThis, e)
+		displayError.apply(outerThis, [e])
+	})
+	window.addEventListener('unhandledrejection', function (event) {
+		var message = 'Unhandled Error: ' + event?.reason?.message
+		displayError.apply(outerThis, [message])
 	})
 }
