@@ -74,27 +74,30 @@ export class CloudFrontResources {
 					})
 	}
 
+	addUncachedBehaviour(path, origin, options = {}) {
+		const behaviour = {
+			responseHeadersPolicy: this.#responseHeaderPolicy,
+			allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
+			viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
+			cachePolicy: CachePolicy.CACHING_DISABLED,
+			originRequestPolicy: this.#originRequestPolicy,
+			...options
+		}
+		this.#distribution.addBehavior(path, origin, behaviour)
+	}
+
 	//GET_HEAD is the default, but specifying it here for future compatibility
 	addHttpApi(path, httpApi, allowedMethods = AllowedMethods.ALLOW_GET_HEAD) {
 		const httpApiDomain = Fn.select(2, Fn.split('/', httpApi.url))
-		this.#distribution.addBehavior(path, new HttpOrigin(httpApiDomain), {
-			responseHeadersPolicy: this.#responseHeaderPolicy,
-			allowedMethods: allowedMethods,
-			viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
-			cachePolicy: CachePolicy.CACHING_DISABLED,
-			originRequestPolicy: this.#originRequestPolicy
+		this.addUncachedBehaviour(path, new HttpOrigin(httpApiDomain), {
+			allowedMethods: allowedMethods
 		})
 	}
 
 	addWebSocketApi(path, webSocketStage) {
 		const httpApiDomain = Fn.select(2, Fn.split('/', webSocketStage.baseApi.apiEndpoint))
 		this.#distribution.addBehavior(path, new HttpOrigin(httpApiDomain), {
-			originPath: webSocketStage.stageName,
-			responseHeadersPolicy: this.#responseHeaderPolicy,
-			allowedMethods: AllowedMethods.ALLOW_GET_HEAD, //GET_HEAD is the default, but specifying it here for future compatibility
-			viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
-			cachePolicy: CachePolicy.CACHING_DISABLED,
-			originRequestPolicy: this.#originRequestPolicy
+			originPath: webSocketStage.stageName
 		})
 	}
 
