@@ -2,6 +2,7 @@
 
 import {parse as csvParse} from 'csv-parse/sync'
 import backOff from 'exponential-backoff'
+import {IAMClient, GenerateCredentialReportCommand, GetCredentialReportCommand} from '@aws-sdk/client-iam'
 
 import {MAX_CREDENTIAL_AGE} from './runtime-envs.js'
 import {buildApiForAccount, buildMultiAccountLambdaHandler} from './utils.js'
@@ -16,11 +17,11 @@ async function checkOneAccount(accountId) {
 	const issues = []
 	const now = Date.now()
 	const maxCredentialAge = MAX_CREDENTIAL_AGE //in days
-	const iam = await buildApiForAccount(accountId, 'ParentAccountCliRole', 'IAM')
+	const iam = await buildApiForAccount(accountId, 'ParentAccountCliRole', IAMClient)
 
 	async function runChecks() {
-		await doWithBackoff('generateCredentialReport')
-		let response = await doWithBackoff('getCredentialReport')
+		await doWithBackoff(new GenerateCredentialReportCommand())
+		let response = await doWithBackoff(new GetCredentialReportCommand())
 		let csv = response.Content.toString()
 		const data = csvParse(csv, {
 			columns: true
@@ -90,7 +91,7 @@ async function checkOneAccount(accountId) {
 		}
 	}
 
-	async function doWithBackoff(delegate) {
+	async function doWithBackoff(command) {
 		const backoffParams = {
 			maxDelay: 65 * 1000, // 1 minute, 5 seconds
 			startingDelay: 4 * 1000 // 10 seconds
@@ -98,9 +99,9 @@ async function checkOneAccount(accountId) {
 		//if not ready, `iam.getCredentialReport()` will throw an error with a 'ReportInProgress' code which will cause the backoff to happen anyway
 		const runDelegate = async () => {
 			try {
-				return await iam[delegate].bind(iam)().promise()
+				return await iam.send(command)
 			} catch (e) {
-				console.error(`error making retryable call for ${delegate}`)
+				console.error(`error making retryable call for ${command.serialize.name}`)
 				console.error(e)
 				throw e
 			}
@@ -111,7 +112,7 @@ async function checkOneAccount(accountId) {
 				return runDelegate()
 			}, backoffParams)
 		} catch (e) {
-			console.error(`error calling backoff for ${delegate}`)
+			console.error(`error calling backoff for ${command.serialize.name}`)
 			console.error(e)
 			throw e
 		}

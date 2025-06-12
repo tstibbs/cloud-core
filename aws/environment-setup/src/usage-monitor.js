@@ -1,3 +1,7 @@
+import {Athena} from '@aws-sdk/client-athena'
+import {CloudFormation, DescribeStacksCommand} from '@aws-sdk/client-cloudformation'
+import {CloudWatchLogs} from '@aws-sdk/client-cloudwatch-logs'
+
 import {buildMultiAccountLambdaHandler, publishNotification, buildApiForAccount} from './utils.js'
 import {USAGE_MONITOR_EVENT_AGE_DAYS, ATHENA_WORKGROUP_NAME} from './runtime-envs.js'
 import {
@@ -248,19 +252,19 @@ function formatResultsForEmail(allResults, ipInfo) {
 }
 
 async function checkOneAccount(accountId) {
-	const cloudformation = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, 'CloudFormation')
-	const athena = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, 'Athena')
-	const cloudWatchLogs = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, 'CloudWatchLogs')
+	const cloudformation = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, CloudFormation)
+	const athena = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, Athena)
+	const cloudWatchLogs = await buildApiForAccount(accountId, USAGE_CHILD_ROLE_NAME, CloudWatchLogs)
 	const apis = {
 		athena,
 		cloudWatchLogs
 	}
 	//get outputs from stacks
-	let listResult = await cloudformation.describeStacks().promise()
+	let listResult = await cloudformation.send(new DescribeStacksCommand({}))
 	let stacks = listResult.Stacks.map(stack => {
-		let resources = stack.Outputs.filter(output => output.OutputKey.startsWith(OUTPUT_PREFIX)).map(output =>
-			JSON.parse(output.OutputValue)
-		)
+		let resources = (stack.Outputs ?? [])
+			.filter(output => output.OutputKey.startsWith(OUTPUT_PREFIX))
+			.map(output => JSON.parse(output.OutputValue))
 		return {
 			name: stack.StackName,
 			resources

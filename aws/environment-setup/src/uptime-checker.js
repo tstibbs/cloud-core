@@ -14,7 +14,7 @@ async function runChecks(invocationId) {
 		queryString: 'connectivity.connected:false',
 		indexName: indexName
 	}
-	let results = await iot.searchIndex(params).promise()
+	let results = await iot.searchIndex(params)
 	let issues = results.things
 		.filter(
 			thing =>

@@ -2,19 +2,30 @@ import 'dotenv/config.js'
 import assert from 'assert'
 
 import {ALERTS_TOPIC, CHILD_ACCOUNTS} from './runtime-envs.js'
-import {aws, assumeRole} from './auth-utils.js'
+import {defaultsForAwsService, assumeRoleTemporarily} from './auth-utils.js'
+
+import {Athena} from '@aws-sdk/client-athena'
+import {CloudFormation} from '@aws-sdk/client-cloudformation'
+import {CloudWatchLogs} from '@aws-sdk/client-cloudwatch-logs'
+import {DynamoDBDocument} from '@aws-sdk/lib-dynamodb'
+import {DynamoDB} from '@aws-sdk/client-dynamodb'
+import {IAM} from '@aws-sdk/client-iam'
+import {IoT} from '@aws-sdk/client-iot'
+import {S3} from '@aws-sdk/client-s3'
+import {SNS} from '@aws-sdk/client-sns'
 
 const alertsTopic = ALERTS_TOPIC //needs to be full arn
 const childAccounts = CHILD_ACCOUNTS
 
-const athena = new aws.Athena()
-const sns = new aws.SNS()
-const s3 = new aws.S3()
-const iam = new aws.IAM()
-const iot = new aws.Iot()
-const cloudWatchLogs = new aws.CloudWatchLogs()
-const cloudformation = new aws.CloudFormation()
-const dydbDocClient = new aws.DynamoDB.DocumentClient()
+const athena = new Athena(defaultsForAwsService('Athena'))
+const sns = new SNS(defaultsForAwsService('SNS'))
+const s3 = new S3(defaultsForAwsService('S3'))
+const iam = new IAM(defaultsForAwsService('IAM'))
+const iot = new IoT(defaultsForAwsService('IoT'))
+const cloudWatchLogs = new CloudWatchLogs(defaultsForAwsService('CloudWatchLogs'))
+const cloudformation = new CloudFormation(defaultsForAwsService('CloudFormation'))
+const dynamoDb = new DynamoDB(defaultsForAwsService('DynamoDB'))
+const dydbDocClient = DynamoDBDocument.from(dynamoDb)
 
 export function assertNotPaging(response) {
 	//haven't bothered to implement paging of responses, so just check that there isn't any paging required
@@ -59,13 +70,11 @@ export function buildSingleAccountLambdaHandler(delegate) {
 }
 
 export async function publishNotification(message, title, invocationId) {
-	await sns
-		.publish({
-			Message: `${message}\n\ninvocationId=${invocationId}\n\n${getCurrentLambdaLogsLink()}`,
-			TopicArn: alertsTopic,
-			Subject: title
-		})
-		.promise()
+	await sns.publish({
+		Message: `${message}\n\ninvocationId=${invocationId}\n\n${getCurrentLambdaLogsLink()}`,
+		TopicArn: alertsTopic,
+		Subject: title
+	})
 	console.log('published sns alert')
 }
 
@@ -78,9 +87,8 @@ function getCurrentLambdaLogsLink() {
 }
 
 export async function buildApiForAccount(accountId, role, api) {
-	let oldCreds = await assumeRole(`arn:aws:iam::${accountId}:role/${role}`)
-	let cloudformation = new aws[api]()
-	aws.config.credentials = oldCreds
+	let clientConfigWithCreds = await assumeRoleTemporarily(`arn:aws:iam::${accountId}:role/${role}`)
+	let cloudformation = new api(clientConfigWithCreds)
 	return cloudformation
 }
 

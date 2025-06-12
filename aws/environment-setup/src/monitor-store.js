@@ -1,5 +1,6 @@
 import lodash from 'lodash'
 const {difference} = lodash
+import {ScanCommand, BatchWriteItemCommand} from '@aws-sdk/client-dynamodb'
 
 import {dydbDocClient, publishNotification} from './utils.js'
 import {MONITOR_TABLE_NAME} from './runtime-envs.js'
@@ -22,27 +23,35 @@ export class MonitorStore {
 				'#pkField': PK.name
 			},
 			ExpressionAttributeValues: {
-				':monitorType': this._monitorTypePrefix
+				':monitorType': {
+					S: this._monitorTypePrefix
+				}
 			}
 		}
 
-		let data = await dydbDocClient.scan(params).promise()
-		return data.Items.map(item => JSON.parse(item.obj))
+		let data = await dydbDocClient.send(new ScanCommand(params))
+		return data.Items.map(item => JSON.parse(item.obj.S))
 	}
 
 	async _updateStore(newIssues, obseletePks) {
 		let putParams = newIssues.map(issue => ({
 			PutRequest: {
 				Item: {
-					[PK.name]: `${this._monitorTypePrefix}${issue.pk}`,
-					[OBJ.name]: JSON.stringify(issue)
+					[PK.name]: {
+						S: `${this._monitorTypePrefix}${issue.pk}`
+					},
+					[OBJ.name]: {
+						S: JSON.stringify(issue)
+					}
 				}
 			}
 		}))
 		let deleteParams = obseletePks.map(pk => ({
 			DeleteRequest: {
 				Key: {
-					[PK.name]: `${this._monitorTypePrefix}${pk}`
+					[PK.name]: {
+						S: `${this._monitorTypePrefix}${pk}`
+					}
 				}
 			}
 		}))
@@ -52,7 +61,7 @@ export class MonitorStore {
 			}
 		}
 
-		await dydbDocClient.batchWrite(params).promise()
+		await dydbDocClient.send(new BatchWriteItemCommand(params))
 	}
 
 	async _resolveIssues(currentIssues) {

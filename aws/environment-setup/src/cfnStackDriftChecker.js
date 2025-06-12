@@ -3,6 +3,8 @@ import _ from 'lodash'
 import assert from 'assert'
 import backOff from 'exponential-backoff'
 
+import {CloudFormation} from '@aws-sdk/client-cloudformation'
+
 import {buildApiForAccount, assertNotPaging, inSeries, buildMultiAccountLambdaHandler} from './utils.js'
 import {diffsAreAcceptable} from './drift-exclusions.js'
 import {MonitorStore} from './monitor-store.js'
@@ -25,11 +27,10 @@ function addIssuePks(issues) {
 }
 
 async function checkOneStack(cloudformation, stackName) {
-	let detectResponse = await cloudformation
-		.detectStackDrift({
-			StackName: stackName
-		})
-		.promise()
+	let detectResponse = await cloudformation.detectStackDrift({
+		StackName: stackName
+	})
+
 	assertNotPaging(detectResponse)
 	let detectionId = detectResponse.StackDriftDetectionId
 
@@ -38,11 +39,10 @@ async function checkOneStack(cloudformation, stackName) {
 		startingDelay: 10 * 1000 // 10 seconds
 	}
 	const checkForCompletion = async () => {
-		let statusResponse = await cloudformation
-			.describeStackDriftDetectionStatus({
-				StackDriftDetectionId: detectionId
-			})
-			.promise()
+		let statusResponse = await cloudformation.describeStackDriftDetectionStatus({
+			StackDriftDetectionId: detectionId
+		})
+
 		console.log(JSON.stringify(statusResponse, null, 2))
 		assertNotPaging(statusResponse)
 		let detectionStatus = statusResponse.DetectionStatus
@@ -79,12 +79,11 @@ async function checkOneStack(cloudformation, stackName) {
 }
 
 export async function checkOneStackDriftsAcceptable(cloudformation, stackName) {
-	let resourceDrifts = await cloudformation
-		.describeStackResourceDrifts({
-			StackName: stackName,
-			StackResourceDriftStatusFilters: ['MODIFIED'] //TODO should include 'DELETED'
-		})
-		.promise()
+	let resourceDrifts = await cloudformation.describeStackResourceDrifts({
+		StackName: stackName,
+		StackResourceDriftStatusFilters: ['MODIFIED'] //TODO should include 'DELETED'
+	})
+
 	console.log(JSON.stringify(resourceDrifts, null, 2))
 	assertNotPaging(resourceDrifts)
 	return diffsAreAcceptable(resourceDrifts.StackResourceDrifts)
@@ -106,8 +105,8 @@ function deletedStacksFilter(summary) {
 }
 
 async function checkOneAccount(accountId) {
-	let cloudformation = await buildApiForAccount(accountId, 'ParentAccountCliRole', 'CloudFormation')
-	let stackResponse = await cloudformation.listStacks({}).promise()
+	let cloudformation = await buildApiForAccount(accountId, 'ParentAccountCliRole', CloudFormation)
+	let stackResponse = await cloudformation.listStacks({})
 	let stacks = stackResponse.StackSummaries.filter(deletedStacksFilter).map(summary => summary.StackName)
 	console.log(`Checking drift status for: ${accountId} / ${stacks}`)
 	assertNotPaging(stackResponse)

@@ -1,12 +1,10 @@
 import dotenv from 'dotenv'
-import aws from 'aws-sdk'
+import {S3} from '@aws-sdk/client-s3'
+
+import {defaultAwsClientConfig} from '../../../tools/aws-client-config.js'
 
 dotenv.config()
 
-aws.config.apiVersions = {
-	s3: '2006-03-01'
-}
-
-export {aws}
+export const s3 = new S3(defaultAwsClientConfig)
 
 export const {BUCKET} = process.env

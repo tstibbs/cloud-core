@@ -4,14 +4,12 @@ import {relative} from 'path'
 import {readFile} from 'fs/promises'
 
 import {list} from 'recursive-readdir-async'
+import {S3} from '@aws-sdk/client-s3'
+import {Upload} from '@aws-sdk/lib-storage'
 
-import aws from 'aws-sdk'
-aws.config.region = 'eu-west-2'
-aws.config.apiVersions = {
-	s3: '2006-03-01'
-}
+import {defaultAwsClientConfig} from './aws-client-config.js'
 
-const s3 = new aws.S3()
+const s3 = new S3(defaultAwsClientConfig)
 
 const INCLUDE_SUFFIXES = 'include-suffixes'
 const EXCLUDE_SUFFIXES = 'exclude-suffixes'
@@ -34,25 +32,24 @@ export class S3Sync {
 	}
 
 	async upload(fileName, body, contentType) {
-		let uploadResponse = await s3
-			.upload({
+		let uploadResponse = await new Upload({
+			client: s3,
+			params: {
 				Bucket: this.#bucketName,
 				Key: `${this.#subDirectoryPath}/${fileName}`,
 				Body: body,
 				ContentType: contentType
-			})
-			.promise()
+			}
+		}).done()
 		assert.notEqual(uploadResponse.Location, null)
 		assert.notEqual(uploadResponse.Location, undefined)
 	}
 
 	async listRemotePaths() {
-		let response = await s3
-			.listObjectsV2({
-				Bucket: this.#bucketName,
-				Prefix: this.#subDirectoryPath
-			})
-			.promise()
+		let response = await s3.listObjectsV2({
+			Bucket: this.#bucketName,
+			Prefix: this.#subDirectoryPath
+		})
 
 		if (response.IsTruncated) {
 			console.error(
@@ -122,7 +119,7 @@ export class S3Sync {
 					Objects: objectsToDelete
 				}
 			}
-			await s3.deleteObjects(params).promise()
+			await s3.deleteObjects(params)
 		}
 	}
 
