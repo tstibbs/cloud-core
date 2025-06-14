@@ -22,7 +22,7 @@ function createEmergencyInfra(stack, notificationTopic) {
 		],
 		memorySize: 128,
 		timeout: Duration.minutes(5),
-		runtime: Runtime.NODEJS_20_X
+		runtime: Runtime.NODEJS_22_X
 	})
 	notificationTopic.grantPublish(emergencyTearDownFunction)
 

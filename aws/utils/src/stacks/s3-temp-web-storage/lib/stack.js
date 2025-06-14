@@ -98,7 +98,7 @@ export class S3TempWebStorageResources {
 			entry: resolve(__dirname, `../src/${entry}.js`),
 			memorySize: 128,
 			timeout: Duration.seconds(20),
-			runtime: Runtime.NODEJS_20_X,
+			runtime: Runtime.NODEJS_22_X,
 			environment: envs
 		})
 		return handler

@@ -15,7 +15,7 @@ function createLambda(stack, notificationTopic, cloudTrailLogsBucket) {
 		},
 		memorySize: 128,
 		timeout: cdk.Duration.seconds(20),
-		runtime: lambda.Runtime.NODEJS_20_X
+		runtime: lambda.Runtime.NODEJS_22_X
 	})
 	notificationTopic.grantPublish(loginMonitorFunction)
 	cloudTrailLogsBucket.grantRead(loginMonitorFunction)

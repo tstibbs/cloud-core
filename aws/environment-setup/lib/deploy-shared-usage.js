@@ -76,7 +76,7 @@ export function createParentUsageMonitorResources(stack, notificationTopic) {
 		role: lambdaRole,
 		memorySize: 512,
 		timeout: Duration.minutes(5),
-		runtime: Runtime.NODEJS_20_X
+		runtime: Runtime.NODEJS_22_X
 	})
 	notificationTopic.grantPublish(usageMonitorFunction)
 

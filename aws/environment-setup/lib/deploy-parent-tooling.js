@@ -56,7 +56,7 @@ function createLambda(stack, notificationTopic) {
 		},
 		memorySize: 128,
 		timeout: cdk.Duration.minutes(5),
-		runtime: lambda.Runtime.NODEJS_20_X,
+		runtime: lambda.Runtime.NODEJS_22_X,
 		role: toolingFunctionsRole
 	})
 
@@ -70,7 +70,7 @@ function createLambda(stack, notificationTopic) {
 		},
 		memorySize: 128,
 		timeout: cdk.Duration.minutes(1),
-		runtime: lambda.Runtime.NODEJS_20_X,
+		runtime: lambda.Runtime.NODEJS_22_X,
 		role: toolingFunctionsRole
 	})
 
