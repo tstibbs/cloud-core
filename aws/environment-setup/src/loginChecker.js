@@ -1,13 +1,11 @@
-import util from 'util'
-import zlib from 'zlib'
+import {createGunzip} from 'zlib'
 import ipRangeCheck from 'ip-range-check'
 
 import {IP_RANGES} from './runtime-envs.js'
 import {publishNotification, s3} from './utils.js'
+import {GetObjectCommand} from '@aws-sdk/client-s3'
 
 const acceptableIpRanges = IP_RANGES
-
-const gunzip = util.promisify(zlib.gunzip)
 
 const EVENT_SOURCE = 'signin.amazonaws.com'
 const EVENT_TYPE = 'AwsConsoleSignIn'
@@ -25,14 +23,18 @@ async function processEvent(event) {
 	console.log(`srcBucket: ${srcBucket}`)
 	console.log(`srcKey: ${srcKey}`)
 
-	let s3Response = await s3.getObject({
-		Bucket: srcBucket,
-		Key: srcKey
-	})
+	let s3Response = await s3.send(
+		new GetObjectCommand({
+			Bucket: srcBucket,
+			Key: srcKey
+		})
+	)
 
 	console.log('got s3 object')
-	let raw = await gunzip(s3Response.Body)
-	let records = JSON.parse(raw)
+	const gunzip = createGunzip()
+	s3Response.Body.pipe(gunzip)
+	const raw = Buffer.concat(await gunzip.toArray()).toString('utf8')
+	const records = JSON.parse(raw)
 	return records
 }
 

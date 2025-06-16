@@ -16,12 +16,12 @@ function createEmergencyInfra(stack, notificationTopic) {
 		},
 		initialPolicy: [
 			new PolicyStatement({
-				actions: ['cloudformation:DescribeStacks', 'cloudformation:DeleteStack'],
+				actions: ['cloudformation:DescribeStacks', 'cloudformation:ListStacks', 'cloudformation:DeleteStack'],
 				resources: ['*']
 			})
 		],
 		memorySize: 128,
-		timeout: Duration.minutes(5),
+		timeout: Duration.minutes(15),
 		runtime: Runtime.NODEJS_22_X
 	})
 	notificationTopic.grantPublish(emergencyTearDownFunction)

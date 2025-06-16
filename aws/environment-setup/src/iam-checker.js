@@ -22,7 +22,7 @@ async function checkOneAccount(accountId) {
 	async function runChecks() {
 		await doWithBackoff(new GenerateCredentialReportCommand())
 		let response = await doWithBackoff(new GetCredentialReportCommand())
-		let csv = response.Content.toString()
+		let csv = response.Content
 		const data = csvParse(csv, {
 			columns: true
 		})
