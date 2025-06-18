@@ -96,7 +96,7 @@ export class CloudFrontResources {
 
 	addWebSocketApi(path, webSocketStage) {
 		const httpApiDomain = Fn.select(2, Fn.split('/', webSocketStage.baseApi.apiEndpoint))
-		this.#distribution.addBehavior(path, new HttpOrigin(httpApiDomain), {
+		this.addUncachedBehaviour(path, new HttpOrigin(httpApiDomain), {
 			originPath: webSocketStage.stageName
 		})
 	}
