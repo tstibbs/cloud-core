@@ -1,5 +1,7 @@
 // This file must have no dependencies and must be loaded first, so it can warn of any issues loading dependent libraries
 
+const hiddenMessages = ['log: [HMR] Waiting for update signal from WDS...']
+
 const showDebug =
 	<%= !!logsEntriesIndicateErrors %> ||
 	new URLSearchParams(location.search).has('debug') ||
@@ -24,7 +26,7 @@ if (showDebug) {
 				return false
 			}
 			for (var i = 0; i < bufferedMessages.length; i++) {
-				displayError(bufferedMessages)
+				displayError(bufferedMessages[i])
 			}
 		} else {
 			setTimeout(addErrorHandler.bind(this), 1000) //just keep checking, it won't be long
@@ -49,11 +51,13 @@ if (showDebug) {
 					}
 				}
 			})
-			var message = args.join(' | ')
-			elem.innerHTML = message
-			var list = document.getElementById('errors-list')
-			list.appendChild(elem)
-			container.style.display = 'block' //may already be showing, but that's fine
+			var message = args.at(0) + ': ' + args.slice(1).join(' | ')
+			if (!hiddenMessages.includes(message)) {
+				elem.innerHTML = message
+				var list = document.getElementById('errors-list')
+				list.appendChild(elem)
+				container.style.display = 'block' //may already be showing, but that's fine
+			}
 		} else {
 			//if the dom isn't ready yet, let's buffer the messages up for now
 			bufferedMessages.push(args)
@@ -68,7 +72,8 @@ if (showDebug) {
 					//scoping old
 					window.console[func] = function () {
 						old.apply(this, arguments) //log first in case our displayer mucks something up
-						displayError.apply(outerThis, arguments)
+						var args = [func].concat(Array.prototype.slice.call(arguments))
+						displayError.apply(outerThis, args)
 					}
 				})(func, window.console[func])
 			}
@@ -76,13 +81,12 @@ if (showDebug) {
 	}
 
 	window.onerror = function (message, file, line, col, error) {
-		displayError.apply(outerThis, [message, file, error])
+		displayError.apply(outerThis, ['onerror', message, file, error])
 	}
 	window.addEventListener('error', function (e) {
-		displayError.apply(outerThis, [e])
+		displayError.apply(outerThis, ['error event', e])
 	})
 	window.addEventListener('unhandledrejection', function (event) {
-		var message = 'Unhandled Error: ' + event?.reason?.message
-		displayError.apply(outerThis, [message])
+		displayError.apply(outerThis, ['unhandledrejection', event?.reason?.message])
 	})
 }
