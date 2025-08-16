@@ -93,15 +93,15 @@ export class MonitorStore {
 	}
 
 	async summariseAndNotify(invocationId, issues) {
-		let sunday = new Date().getDay() === 0
+		let monday = new Date().getDay() === 1
 		console.log(`${issues.length} issues found: ${JSON.stringify(issues, null, 2)}`)
 		this._addIssuePks(issues)
 		let {raised, existing, fixed} = await this._resolveIssues(issues)
 
-		//if sunday, send if we have any issues at all
-		//if not sunday, only send if we have raised or fixed issues
+		//if Monday, send if we have any issues at all
+		//if not Monday, only send if we have raised or fixed issues
 
-		if (raised.length > 0 || fixed.length > 0 || (existing.length > 0 && sunday)) {
+		if (raised.length > 0 || fixed.length > 0 || (existing.length > 0 && monday)) {
 			console.log({raised: raised.length, existing: existing.length, fixed: fixed.length})
 			let message =
 				`${this._monitorLabel} issues found.\n\n` +
@@ -109,7 +109,7 @@ export class MonitorStore {
 				this._formatIssuesForMessage('previously raised issues', existing) +
 				this._formatIssuesForMessage('issues resolved', fixed)
 			await publishNotification(message, `AWS account ${this._monitorLabel} alert`, invocationId)
-		} else if (sunday) {
+		} else if (monday) {
 			console.log('no issues to report at all')
 		} else {
 			//issues is the list of issues we've found today (regardless of whether new or not)
