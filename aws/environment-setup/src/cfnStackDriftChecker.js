@@ -14,6 +14,7 @@ const sleep = util.promisify(setTimeout)
 const detectionFailed = 'DETECTION_FAILED'
 const detectionComplete = 'DETECTION_COMPLETE'
 const driftStatusDrifted = 'DRIFTED'
+const driftStatusUnknown = 'UNKNOWN'
 const driftStatusInSync = 'IN_SYNC'
 
 const monitorStore = new MonitorStore('cfn-drift-checker', 'CFN-DRIFT', formatIssues, addIssuePks)
@@ -61,7 +62,10 @@ async function checkOneStack(cloudformation, stackName) {
 		driftStatus = detectionFailed // if the detection failed we don't really care about the drift status
 	} else if (detectionStatus == detectionComplete) {
 		driftStatus = statusResponse.StackDriftStatus
-		if (statusResponse.StackDriftStatus == driftStatusDrifted) {
+		if (
+			statusResponse.StackDriftStatus == driftStatusDrifted ||
+			statusResponse.StackDriftStatus == driftStatusUnknown
+		) {
 			//if 'drifted' then apply extra filtering because cloudformation drift detection is fundamentally broken (see https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/791)
 			let acceptable = await checkOneStackDriftsAcceptable(cloudformation, stackName)
 			if (acceptable) {
