@@ -26,9 +26,13 @@
 		"yargs": "^18.0.0"
 	},
 	"devDependencies": {
+		"@aws-sdk/client-cloudformation": "^3.930.0",
+		"axios": "^1.13.2",
+		"esbuild": "^0.27.0",
 		"recursive-readdir-async": "^1.3.0"
 	},
 	"scripts": {
-		"test": "node test/import-all-files.js"
+		"test": "node test/import-all-files.js && cd src/stacks/s3-temp-web-storage && cdk synth --quiet --app \"node test/test-stack.js\"",
+		"s3tmp:e2e-deploy": "cd src/stacks/s3-temp-web-storage && cdk deploy --app \"node test/test-stack.js\""
 	}
 }

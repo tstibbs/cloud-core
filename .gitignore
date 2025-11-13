@@ -8,6 +8,7 @@ aws/environment-setup/cdk.out/*
 !aws/environment-setup/cdk.out/package.json
 cdk.tmp/
 cdk.context.json
+cdk.out/
 
 .vscode/launch.json
 
