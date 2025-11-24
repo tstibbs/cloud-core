@@ -7,6 +7,7 @@ import {ifCmd} from '../../../../utils.js'
 
 export const stackName = 'cloud-core-aws-utils-test-stack'
 export const httpApiPrefix = `api`
+export const bucketPrefix = `bucket`
 export const endpointGetItemUrls = `get-item-urls`
 const COUNTRIES_DENY_LIST = ['AQ']
 
@@ -20,7 +21,15 @@ class DeployStack extends Stack {
 		}
 		const cloudFrontResources = new CloudFrontResources(this, COUNTRIES_DENY_LIST, cloudfrontDefaultBehavior)
 
-		new S3TempWebStorageResources(this, cloudFrontResources, null, Duration.days(1), httpApiPrefix, endpointGetItemUrls)
+		new S3TempWebStorageResources(
+			this,
+			cloudFrontResources,
+			null,
+			Duration.days(1),
+			httpApiPrefix,
+			bucketPrefix,
+			endpointGetItemUrls
+		)
 		new CfnOutput(this, 'endpointUrl', {value: `https://${cloudFrontResources.distribution.distributionDomainName}`})
 	}
 }

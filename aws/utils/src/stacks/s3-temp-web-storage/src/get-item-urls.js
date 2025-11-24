@@ -1,10 +1,46 @@
 import {randomUUID} from 'crypto'
 
-import {getSignedUrl} from '@aws-sdk/s3-request-presigner'
-import {GetObjectCommand, PutObjectCommand} from '@aws-sdk/client-s3'
-
-import {BUCKET, s3} from './utils.js'
+import {S3Client, PutObjectCommand} from '@aws-sdk/client-s3'
+import {SecretsManagerClient, GetSecretValueCommand} from '@aws-sdk/client-secrets-manager'
+import {getSignedUrl as getS3SignedUrl} from '@aws-sdk/s3-request-presigner'
+import {getSignedUrl as getCloudFrontSignedUrl} from '@aws-sdk/cloudfront-signer'
 import {endpointFileNameParam, endpointPrefixesParam} from '../shared/constants.js'
+import {defaultAwsClientConfig} from '../../../tools/aws-client-config.js'
+
+const PUT_URL_EXPIRES_SECONDS = 5 * 60 // 5 minutes
+const GET_URL_EXPIRES_SECONDS = 2 * 24 * 60 * 60 // 2 days
+const {
+	CLOUDFRONT_DOMAIN, //
+	CLOUDFRONT_KEY_PAIR_ID, //
+	CLOUDFRONT_PRIVATE_KEY_SECRET_ARN, //
+	BUCKET_PREFIX, //
+	BUCKET //
+} = process.env
+
+const secretsClient = new SecretsManagerClient(defaultAwsClientConfig)
+const s3Client = new S3Client(defaultAwsClientConfig)
+let cachedPrivateKey = null
+
+async function fetchSecret(secretId) {
+	const cmd = new GetSecretValueCommand({SecretId: secretId})
+	const res = await secretsClient.send(cmd)
+	if (res.SecretString) return res.SecretString
+	if (res.SecretBinary) return Buffer.from(res.SecretBinary).toString('utf8')
+	return null
+}
+
+async function ensurePrivateKey() {
+	if (cachedPrivateKey) return cachedPrivateKey
+	if (CLOUDFRONT_PRIVATE_KEY_SECRET_ARN) {
+		cachedPrivateKey = await fetchSecret(CLOUDFRONT_PRIVATE_KEY_SECRET_ARN)
+	}
+	if (!cachedPrivateKey) {
+		throw new Error(
+			'CloudFront private key not provided. Set CLOUDFRONT_PRIVATE_KEY or ensure the Secrets Manager secret exists.'
+		)
+	}
+	return cachedPrivateKey
+}
 
 export async function handler(event) {
 	let {body} = event
@@ -30,10 +66,26 @@ export async function handler(event) {
 	}
 	const randomizer = randomUUID() //prevents object names in the bucket being predictable, and also prevents clashes by different files that are named the same
 	const prefix = prefixes != null && prefixes.length > 0 ? [...prefixes, ''].join('/') : ''
-	const key = `${prefix}${fileName}-${randomizer}`
-	const sign = async operation => await getSignedUrl(s3, new operation({Bucket: BUCKET, Key: key}))
-	const getUrl = await sign(GetObjectCommand)
-	const putUrl = await sign(PutObjectCommand)
+
+	//adding a bucket prefix allows the paths to match up with cloudfront's origin path
+	const key = `${BUCKET_PREFIX}/${prefix}${fileName}-${randomizer}`
+
+	// use s3 presigned urls for PUT
+	const putCommand = new PutObjectCommand({Bucket: BUCKET, Key: key})
+	const putUrl = await getS3SignedUrl(s3Client, putCommand, {
+		expiresIn: PUT_URL_EXPIRES_SECONDS
+	})
+
+	// use cloudfront signed urls for GET
+	const resourceUrl = `https://${CLOUDFRONT_DOMAIN}/${key}`
+	const expires = Date.now() + GET_URL_EXPIRES_SECONDS * 1000
+	const privateKey = await ensurePrivateKey()
+	const getUrl = getCloudFrontSignedUrl({
+		url: resourceUrl,
+		dateLessThan: new Date(expires),
+		privateKey,
+		keyPairId: CLOUDFRONT_KEY_PAIR_ID
+	})
 
 	return {
 		getUrl,

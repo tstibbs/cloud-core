@@ -27,6 +27,7 @@ async function run() {
 		// Request signed URLs
 		const postRes = await axios.post(endpoint, {fileName}, {headers: {'Content-Type': 'application/json'}})
 		const result = postRes.data
+		console.log(result)
 
 		if (!result || !result.putUrl || !result.getUrl) {
 			console.error('Invalid response, missing putUrl/getUrl', result)
@@ -60,8 +61,18 @@ async function run() {
 		console.error('downloaded length:', downloaded.length)
 		process.exit(2)
 	} catch (err) {
-		console.error('ERROR during e2e test:', err && err.message ? err.message : err)
-		process.exit(1)
+		if (err.request) {
+			err.method = err.request?.method
+			delete err.request
+		}
+		if (err.response) {
+			err.response = err.response?.data
+		}
+		if (err.config) {
+			err.url = err?.config?.url
+			delete err.config
+		}
+		throw err
 	}
 }
 
