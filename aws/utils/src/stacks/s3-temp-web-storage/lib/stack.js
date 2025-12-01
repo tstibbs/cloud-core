@@ -17,18 +17,12 @@ import {importLogsBucket, outputUsageStoreInfo, USAGE_TYPE_S3_ACCESS_LOGS} from 
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+export const endpointGetItemUrls = `get-item-urls`
+
 export class S3TempWebStorageResources {
 	#httpApi
 
-	constructor(
-		stack,
-		cloudFrontResources,
-		corsAllowedOrigins,
-		objectExpiry,
-		httpApiPrefix,
-		bucketPrefix,
-		getItemUrlsEndpoint
-	) {
+	constructor(stack, cloudFrontResources, corsAllowedOrigins, objectExpiry, httpApiPrefix, bucketPrefix) {
 		new CfnAccount(stack, 'agiGatewayAccount', {
 			//use a centrally created role so that it doesn't get deleted when this stack is torn down
 			cloudWatchRoleArn: Fn.importValue('AllAccountsStack-apiGatewayCloudWatchRoleArn')
@@ -103,7 +97,7 @@ export class S3TempWebStorageResources {
 
 		cloudFrontResources.addHttpApi(`${httpApiPrefix}/*`, this.#httpApi, AllowedMethods.ALLOW_ALL)
 
-		let handler = this.#buildGenericHandler(stack, `${getItemUrlsEndpoint}-handler`, 'get-item-urls', {
+		let handler = this.#buildGenericHandler(stack, `get-item-urls-handler`, 'get-item-urls', {
 			BUCKET: bucket.bucketName,
 			CLOUDFRONT_DOMAIN: cloudFrontResources.distribution.domainName,
 			CLOUDFRONT_KEY_PAIR_ID: cloudFrontPublicKeyId,
@@ -119,9 +113,9 @@ export class S3TempWebStorageResources {
 			})
 		)
 		cloudFrontPrivateKeySecret.grantRead(handler)
-		let integration = new HttpLambdaIntegration(`${getItemUrlsEndpoint}-integration`, handler)
+		let integration = new HttpLambdaIntegration(`get-item-urls-integration`, handler)
 		this.#httpApi.addRoutes({
-			path: `/${httpApiPrefix}/${getItemUrlsEndpoint}`,
+			path: `/${httpApiPrefix}/${endpointGetItemUrls}`,
 			methods: [HttpMethod.POST],
 			integration: integration
 		})

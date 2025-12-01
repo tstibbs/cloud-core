@@ -27,12 +27,23 @@ const cloudFrontPassThroughHeaders = [
 	'X-Requested-With'
 ]
 
+const cloudfrontDefaultBehavior = {
+	//let's keep our various APIs separate under their own subpaths, thus let's make the default path completely invalid.
+	origin: new HttpOrigin('default.not.in.use.invalid')
+}
+
 export class CloudFrontResources {
 	#distribution
 	#originRequestPolicy
 	#responseHeaderPolicy
 
-	constructor(stack, denyCountries, defaultBehavior, corsAllowedOrigins = null, splitReportingByUrlRoot = false) {
+	constructor(
+		stack,
+		denyCountries,
+		defaultBehavior = cloudfrontDefaultBehavior,
+		corsAllowedOrigins = null,
+		splitReportingByUrlRoot = false
+	) {
 		const logsBucket = importLogsBucket(stack, 'cloudfront')
 		const distributionConstructId = 'distribution'
 		const distributionProps = {
