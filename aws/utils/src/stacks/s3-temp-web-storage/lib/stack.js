@@ -10,7 +10,7 @@ import {PolicyStatement} from 'aws-cdk-lib/aws-iam'
 import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs'
 import {Runtime} from 'aws-cdk-lib/aws-lambda'
 import {AllowedMethods, OriginAccessIdentity, PublicKey, KeyGroup} from 'aws-cdk-lib/aws-cloudfront'
-import {S3Origin} from 'aws-cdk-lib/aws-cloudfront-origins'
+import {S3BucketOrigin} from 'aws-cdk-lib/aws-cloudfront-origins'
 import {KeyPair, PublicKeyFormat} from 'cdk-ec2-key-pair'
 
 import {importLogsBucket, outputUsageStoreInfo, USAGE_TYPE_S3_ACCESS_LOGS} from '../../usage-tracking.js'
@@ -68,7 +68,7 @@ export class S3TempWebStorageResources {
 
 		const oai = new OriginAccessIdentity(stack, 'CloudFrontOAI', {})
 		bucket.grantReadWrite(oai.grantPrincipal)
-		const s3Origin = new S3Origin(bucket, {originAccessIdentity: oai})
+		const s3Origin = S3BucketOrigin.withOriginAccessIdentity(bucket, {originAccessIdentity: oai})
 
 		const keyPair = new KeyPair(stack, 'CloudFrontKeyPair', {
 			keyPairName: `cloudfront-keypair`,
