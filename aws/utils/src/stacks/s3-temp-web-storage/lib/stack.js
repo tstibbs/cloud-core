@@ -1,7 +1,7 @@
 import {fileURLToPath} from 'node:url'
 import {dirname, resolve} from 'node:path'
 
-import {Aws, Annotations, RemovalPolicy, Duration, Fn} from 'aws-cdk-lib'
+import {Aws, Annotations, RemovalPolicy, Duration, Fn, Stack} from 'aws-cdk-lib'
 import {CfnAccount} from 'aws-cdk-lib/aws-apigateway'
 import {HttpLambdaIntegration} from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import {HttpApi, HttpMethod, CorsHttpMethod} from 'aws-cdk-lib/aws-apigatewayv2'
@@ -64,7 +64,7 @@ export class S3TempWebStorageResources {
 		const s3Origin = S3BucketOrigin.withOriginAccessControl(bucket, {originAccessControl: oac})
 
 		const keyPair = new KeyPair(stack, 'CloudFrontKeyPair', {
-			keyPairName: `cloudfront-keypair`,
+			keyPairName: `${Stack.of(stack).stackName}-s3tempresources-cloudfront-keypair`,
 			publicKeyFormat: PublicKeyFormat.PEM,
 			exposePublicKey: true,
 			removalPolicy: RemovalPolicy.DESTROY
