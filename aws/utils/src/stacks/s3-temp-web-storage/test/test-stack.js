@@ -1,9 +1,8 @@
 import {App, Stack, CfnOutput, Duration} from 'aws-cdk-lib'
-import {HttpOrigin} from 'aws-cdk-lib/aws-cloudfront-origins'
 
 import {CloudFrontResources} from '../../cloudfront.js'
 import {S3TempWebStorageResources} from '../lib/stack.js'
-import {ifCmd} from '../../../../utils.js'
+import {ifCmd, applyStandardTags} from '../../../../index.js'
 
 export const stackName = 'cloud-core-aws-utils-test-stack'
 export const httpApiPrefix = `api`
@@ -18,6 +17,8 @@ class DeployStack extends Stack {
 
 		new S3TempWebStorageResources(this, cloudFrontResources, null, Duration.days(1), httpApiPrefix, bucketPrefix)
 		new CfnOutput(this, 'endpointUrl', {value: `https://${cloudFrontResources.distribution.distributionDomainName}`})
+
+		applyStandardTags(this)
 	}
 }
 

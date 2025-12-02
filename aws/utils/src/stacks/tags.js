@@ -16,22 +16,29 @@ function tagAllLambdasWithRevision(stack) {
 
 function tagResourceTree(scope, tagKey, tagValue) {
 	scope.node.children.forEach(resource => {
-		if (CfnResource.isCfnResource(resource)) {
+		if (CfnResource.isCfnResource(resource) && !resource.cfnResourceType.startsWith('Custom::')) {
 			//setting the tags on a resource that doesn't support tags seems to get ignored, so it should be ok to set tags on everything
 			//e.g. can't tag a managed policy: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/819
 			//nor an event rule: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/358
 			//nor AWS::IoT::Policy
-			if (resource.tags !== undefined) {
-				resource.tags.setTag(tagKey, tagValue)
-			} else if (resource.cfnProperties?.tags !== undefined) {
-				resource.cfnProperties.tags.setTag(tagKey, tagValue)
-			} else if (resource._cfnProperties?.Tags != undefined) {
-				resource._cfnProperties?.Tags.push({Key: tagKey, Value: tagValue})
-			} else if (resource._cfnProperties != undefined) {
-				resource._cfnProperties.Tags = [{Key: tagKey, Value: tagValue}]
-			} else {
-				console.error(`None of the usual methods of setting the ${tagKey} tag were applicable.`)
-				process.exitCode = 1
+			try {
+				if (resource.tags !== undefined) {
+					resource.tags.setTag(tagKey, tagValue)
+				} else if (resource.cfnProperties?.tags !== undefined) {
+					resource.cfnProperties.tags.setTag(tagKey, tagValue)
+				} else if (resource._cfnProperties?.Tags != undefined) {
+					resource._cfnProperties?.Tags.push({Key: tagKey, Value: tagValue})
+				} else if (resource._cfnProperties != undefined) {
+					resource._cfnProperties.Tags = [{Key: tagKey, Value: tagValue}]
+				} else {
+					console.error(
+						`None of the usual methods of setting tag '${tagKey}' were applicable to resource type ${resource.cfnResourceType}.`
+					)
+					process.exitCode = 1
+				}
+			} catch (e) {
+				console.error(`Error setting tag '${tagKey}' on resource type ${resource.cfnResourceType}.`)
+				throw e
 			}
 		}
 		tagResourceTree(resource, tagKey, tagValue)
