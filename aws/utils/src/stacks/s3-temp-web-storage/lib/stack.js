@@ -109,6 +109,15 @@ export class S3TempWebStorageResources {
 			CLOUDFRONT_PRIVATE_KEY_SECRET_ARN: cloudFrontPrivateKeySecret.secretArn,
 			BUCKET_PREFIX: bucketPrefix
 		})
+		bucket.addToResourcePolicy(
+			new PolicyStatement({
+				resources: [
+					bucket.arnForObjects('*') //"arn:aws:s3:::bucketname/*"
+				],
+				actions: ['s3:GetObject', 's3:PutObject'],
+				principals: [handler.grantPrincipal]
+			})
+		)
 		handler.addToRolePolicy(
 			new PolicyStatement({
 				resources: [
