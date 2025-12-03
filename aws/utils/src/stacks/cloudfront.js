@@ -27,7 +27,7 @@ const cloudFrontPassThroughHeaders = [
 	'X-Requested-With'
 ]
 
-const cloudfrontDefaultBehavior = {
+export const cloudfrontDefaultBehavior = {
 	//let's keep our various APIs separate under their own subpaths, thus let's make the default path completely invalid.
 	origin: new HttpOrigin('default.not.in.use.invalid')
 }
