@@ -1,8 +1,7 @@
 import axios from 'axios'
 import crypto from 'crypto'
 import {CloudFormationClient, DescribeStacksCommand} from '@aws-sdk/client-cloudformation'
-import {stackName, httpApiPrefix} from './test-stack.js'
-import {endpointGetItemUrls} from '../lib/stack.js'
+import {stackName, httpApiPrefix, endpointGetItemUrls} from './test-stack.js'
 import {ifCmd} from '../../../../utils.js'
 
 async function resolveEndpoint() {

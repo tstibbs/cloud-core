@@ -17,12 +17,18 @@ import {importLogsBucket, outputUsageStoreInfo, USAGE_TYPE_S3_ACCESS_LOGS} from 
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-export const endpointGetItemUrls = `get-item-urls`
-
 export class S3TempWebStorageResources {
 	#httpApi
 
-	constructor(stack, cloudFrontResources, corsAllowedOrigins, objectExpiry, httpApiPrefix, bucketPrefix) {
+	constructor(
+		stack,
+		cloudFrontResources,
+		corsAllowedOrigins,
+		objectExpiry,
+		httpApiPrefix,
+		bucketPrefix,
+		getItemUrlsEndpoint
+	) {
 		new CfnAccount(stack, 'agiGatewayAccount', {
 			//use a centrally created role so that it doesn't get deleted when this stack is torn down
 			cloudWatchRoleArn: Fn.importValue('AllAccountsStack-apiGatewayCloudWatchRoleArn')
@@ -114,7 +120,7 @@ export class S3TempWebStorageResources {
 		cloudFrontPrivateKeySecret.grantRead(handler)
 		let integration = new HttpLambdaIntegration(`get-item-urls-integration`, handler)
 		this.#httpApi.addRoutes({
-			path: `/${httpApiPrefix}/${endpointGetItemUrls}`,
+			path: `/${httpApiPrefix}/${getItemUrlsEndpoint}`,
 			methods: [HttpMethod.POST],
 			integration: integration
 		})
