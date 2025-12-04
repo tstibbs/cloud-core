@@ -31,7 +31,9 @@ class DeployStack extends Stack {
 	}
 }
 
-ifCmd(import.meta, () => {
+export function buildStack() {
 	const app = new App()
-	new DeployStack(app, stackName)
-})
+	return new DeployStack(app, stackName)
+}
+
+ifCmd(import.meta, buildStack)
