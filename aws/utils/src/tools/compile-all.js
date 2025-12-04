@@ -35,6 +35,7 @@ async function listFiles(dirPath) {
 		'--cached', // include tracked files
 		'--others', // include untracked files
 		'*.js',
+		':!:*.test.js', // exclude tests, as things like jest describe won't be available
 		'*.mjs'
 	]
 	const fileList = await git.raw(commandArgs)
