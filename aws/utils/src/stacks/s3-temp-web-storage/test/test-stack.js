@@ -1,7 +1,7 @@
 import {App, Stack, CfnOutput, Duration} from 'aws-cdk-lib'
 
 import {CloudFrontResources} from '../../cloudfront.js'
-import {S3TempWebStorageResources} from '../lib/stack.js'
+import {S3TempWebStorageResources, loadKeys} from '../lib/stack.js'
 import {ifCmd, applyStandardTags} from '../../../../index.js'
 
 export const stackName = 'cloud-core-aws-utils-test-stack'
@@ -23,7 +23,8 @@ class DeployStack extends Stack {
 			Duration.days(1),
 			httpApiPrefix,
 			bucketPrefix,
-			endpointGetItemUrls
+			endpointGetItemUrls,
+			props.keys
 		)
 		new CfnOutput(this, 'endpointUrl', {value: `https://${cloudFrontResources.distribution.distributionDomainName}`})
 
@@ -31,9 +32,10 @@ class DeployStack extends Stack {
 	}
 }
 
-export function buildStack() {
+export async function buildStack() {
+	const keys = await loadKeys()
 	const app = new App()
-	return new DeployStack(app, stackName)
+	return new DeployStack(app, stackName, {keys})
 }
 
 ifCmd(import.meta, buildStack)

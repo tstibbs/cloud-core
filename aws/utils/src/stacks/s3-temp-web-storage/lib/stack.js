@@ -1,7 +1,9 @@
 import {fileURLToPath} from 'node:url'
 import {dirname, resolve} from 'node:path'
+import {readFile} from 'node:fs/promises'
+import {existsSync} from 'node:fs'
 
-import {Aws, Annotations, RemovalPolicy, Duration, Fn, Stack} from 'aws-cdk-lib'
+import {Aws, Annotations, RemovalPolicy, Duration, Fn} from 'aws-cdk-lib'
 import {CfnAccount} from 'aws-cdk-lib/aws-apigateway'
 import {HttpLambdaIntegration} from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import {HttpApi, HttpMethod, CorsHttpMethod} from 'aws-cdk-lib/aws-apigatewayv2'
@@ -11,7 +13,7 @@ import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs'
 import {Runtime} from 'aws-cdk-lib/aws-lambda'
 import {AllowedMethods, S3OriginAccessControl, PublicKey, KeyGroup} from 'aws-cdk-lib/aws-cloudfront'
 import {S3BucketOrigin} from 'aws-cdk-lib/aws-cloudfront-origins'
-import {KeyPair, PublicKeyFormat} from 'cdk-ec2-key-pair'
+import {StringParameter} from 'aws-cdk-lib/aws-ssm'
 
 import {importLogsBucket, outputUsageStoreInfo, USAGE_TYPE_S3_ACCESS_LOGS} from '../../usage-tracking.js'
 
@@ -27,7 +29,8 @@ export class S3TempWebStorageResources {
 		objectExpiry,
 		httpApiPrefix,
 		bucketPrefix,
-		getItemUrlsEndpoint
+		getItemUrlsEndpoint,
+		keys
 	) {
 		new CfnAccount(stack, 'agiGatewayAccount', {
 			//use a centrally created role so that it doesn't get deleted when this stack is torn down
@@ -68,15 +71,12 @@ export class S3TempWebStorageResources {
 
 		const oac = new S3OriginAccessControl(stack, 'CloudFrontOAC', {})
 		const s3Origin = S3BucketOrigin.withOriginAccessControl(bucket, {originAccessControl: oac})
-
-		const keyPair = new KeyPair(stack, 'CloudFrontKeyPair', {
-			keyPairName: `${Stack.of(stack).stackName}-s3tempresources-cloudfront-keypair`,
-			publicKeyFormat: PublicKeyFormat.PEM,
-			exposePublicKey: true,
-			removalPolicy: RemovalPolicy.DESTROY
+		const {publicKeyPem, privateKeyPem} = keys
+		const cloudFrontPrivateKeyParam = new StringParameter(stack, 'CloudFrontPrivateKeyParam', {
+			stringValue: privateKeyPem
 		})
 		const publicKey = new PublicKey(stack, 'CloudFrontPublicKey', {
-			encodedKey: keyPair.publicKeyValue
+			encodedKey: publicKeyPem
 		})
 		const keyGroup = new KeyGroup(stack, 'CloudFrontKeyGroup', {
 			items: [publicKey]
@@ -85,9 +85,6 @@ export class S3TempWebStorageResources {
 		cloudFrontResources.addUncachedBehaviour(`${bucketPrefix}/*`, s3Origin, {
 			trustedKeyGroups: [keyGroup]
 		})
-
-		const cloudFrontPublicKeyId = publicKey.publicKeyId
-		const cloudFrontPrivateKeySecret = keyPair.privateKeySecret
 
 		const httpApiProps = {
 			apiName: `${Aws.STACK_NAME}-httpApi`
@@ -105,8 +102,8 @@ export class S3TempWebStorageResources {
 		let handler = this.#buildGenericHandler(stack, `get-item-urls-handler`, 'get-item-urls', {
 			BUCKET: bucket.bucketName,
 			CLOUDFRONT_DOMAIN: cloudFrontResources.distribution.domainName,
-			CLOUDFRONT_KEY_PAIR_ID: cloudFrontPublicKeyId,
-			CLOUDFRONT_PRIVATE_KEY_SECRET_ARN: cloudFrontPrivateKeySecret.secretArn,
+			CLOUDFRONT_KEY_PAIR_ID: publicKey.publicKeyId,
+			CLOUDFRONT_PRIVATE_KEY_PARAM_NAME: cloudFrontPrivateKeyParam.parameterName,
 			BUCKET_PREFIX: bucketPrefix
 		})
 		bucket.addToResourcePolicy(
@@ -118,15 +115,9 @@ export class S3TempWebStorageResources {
 				principals: [handler.grantPrincipal]
 			})
 		)
-		handler.addToRolePolicy(
-			new PolicyStatement({
-				resources: [
-					bucket.arnForObjects('*') //"arn:aws:s3:::bucketname/*"
-				],
-				actions: ['s3:GetObject', 's3:PutObject']
-			})
-		)
-		cloudFrontPrivateKeySecret.grantRead(handler)
+		bucket.grantReadWrite(handler)
+		cloudFrontPrivateKeyParam.grantRead(handler)
+
 		let integration = new HttpLambdaIntegration(`get-item-urls-integration`, handler)
 		this.#httpApi.addRoutes({
 			path: `/${httpApiPrefix}/${getItemUrlsEndpoint}`,
@@ -148,5 +139,23 @@ export class S3TempWebStorageResources {
 
 	get httpApi() {
 		return this.#httpApi
+	}
+}
+
+export async function loadKeys() {
+	const dir = resolve(process.cwd(), 'cdk.out', 'keys')
+	const pubKeyPath = resolve(dir, 'cloudfront_public.pem')
+	const privKeyPath = resolve(dir, 'cloudfront_private.pem')
+	if (!existsSync(pubKeyPath) || !existsSync(privKeyPath)) {
+		throw new Error(
+			`CloudFront key files not found in ${dir}.\nGenerate them and place in ${dir}:\n\nopenssl genrsa -out ${privKeyPath} 2048\nopenssl rsa -pubout -in ${privKeyPath} -out ${pubKeyPath}\n\nThen re-run cdk synth/deploy.`
+		)
+	}
+	const publicKeyPem = await readFile(pubKeyPath, 'utf8')
+	const privateKeyPem = await readFile(privKeyPath, 'utf8')
+
+	return {
+		publicKeyPem,
+		privateKeyPem
 	}
 }

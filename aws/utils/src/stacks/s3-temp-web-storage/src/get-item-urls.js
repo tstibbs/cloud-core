@@ -1,7 +1,7 @@
 import {randomUUID} from 'crypto'
 
 import {S3Client, PutObjectCommand} from '@aws-sdk/client-s3'
-import {SecretsManagerClient, GetSecretValueCommand} from '@aws-sdk/client-secrets-manager'
+import {SSMClient, GetParameterCommand} from '@aws-sdk/client-ssm'
 import {getSignedUrl as getS3SignedUrl} from '@aws-sdk/s3-request-presigner'
 import {getSignedUrl as getCloudFrontSignedUrl} from '@aws-sdk/cloudfront-signer'
 import {endpointFileNameParam, endpointPrefixesParam} from '../shared/constants.js'
@@ -12,31 +12,29 @@ const GET_URL_EXPIRES_SECONDS = 2 * 24 * 60 * 60 // 2 days
 const {
 	CLOUDFRONT_DOMAIN, //
 	CLOUDFRONT_KEY_PAIR_ID, //
-	CLOUDFRONT_PRIVATE_KEY_SECRET_ARN, //
+	CLOUDFRONT_PRIVATE_KEY_PARAM_NAME, //
 	BUCKET_PREFIX, //
 	BUCKET //
 } = process.env
 
-const secretsClient = new SecretsManagerClient(defaultAwsClientConfig)
+const ssmClient = new SSMClient(defaultAwsClientConfig)
 const s3Client = new S3Client(defaultAwsClientConfig)
 let cachedPrivateKey = null
 
-async function fetchSecret(secretId) {
-	const cmd = new GetSecretValueCommand({SecretId: secretId})
-	const res = await secretsClient.send(cmd)
-	if (res.SecretString) return res.SecretString
-	if (res.SecretBinary) return Buffer.from(res.SecretBinary).toString('utf8')
-	return null
+async function fetchParameter(parameterName) {
+	const cmd = new GetParameterCommand({Name: parameterName, WithDecryption: false})
+	const res = await ssmClient.send(cmd)
+	return res.Parameter ? res.Parameter.Value : null
 }
 
 async function ensurePrivateKey() {
 	if (cachedPrivateKey) return cachedPrivateKey
-	if (CLOUDFRONT_PRIVATE_KEY_SECRET_ARN) {
-		cachedPrivateKey = await fetchSecret(CLOUDFRONT_PRIVATE_KEY_SECRET_ARN)
+	if (CLOUDFRONT_PRIVATE_KEY_PARAM_NAME) {
+		cachedPrivateKey = await fetchParameter(CLOUDFRONT_PRIVATE_KEY_PARAM_NAME)
 	}
 	if (!cachedPrivateKey) {
 		throw new Error(
-			'CloudFront private key not provided. Set CLOUDFRONT_PRIVATE_KEY or ensure the Secrets Manager secret exists.'
+			'CloudFront private key not provided. Set CLOUDFRONT_PRIVATE_KEY_PARAM_NAME to the SSM parameter name containing the private key (stored as plain String).'
 		)
 	}
 	return cachedPrivateKey
