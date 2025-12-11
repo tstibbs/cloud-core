@@ -55,7 +55,8 @@ export async function testsynth(argv) {
 
 async function testcdk(argv) {
 	let otherArgs = parseAdditionalArgs(argv)
-	await run(`NODE_OPTIONS=--experimental-vm-modules jest ${otherArgs}`)
+	const existingNodeOptions = process.env.NODE_OPTIONS ?? ''
+	await run(`NODE_OPTIONS="${existingNodeOptions} --experimental-vm-modules" npx jest ${otherArgs}`)
 }
 
 async function dryrun(argv) {
