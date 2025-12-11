@@ -39,10 +39,18 @@ function checkEncryption(synthed) {
 				expect(sseConfigs.some(sseConfig => sseConfig.ServerSideEncryptionByDefault?.SSEAlgorithm === 'AES256')).toBe(
 					true
 				)
-				//if this fail, adding this is usually sufficient: `encryption: BucketEncryption.S3_MANAGED`
+				//if this fails, adding this is usually sufficient: `encryption: BucketEncryption.S3_MANAGED`
 			})
 		})
 	}
+}
+
+function checkNoSecretsManager(synthed) {
+	//secrets manager is unreasonably expensive, so we don't want to use it
+	test(`no secrets manager`, () => {
+		let resources = Object.values(synthed.Resources).filter(resource => resource.Type == 'AWS::SecretsManager::Secret')
+		expect(resources.length).toEqual(0)
+	})
 }
 
 export function checkAllStackPolicies(stack) {
@@ -52,6 +60,7 @@ export function checkAllStackPolicies(stack) {
 			checkStackClearsUp(synthed)
 			checkDriftDetectionCompatible(synthed)
 			checkEncryption(synthed)
+			checkNoSecretsManager(synthed)
 		}
 	})
 }
