@@ -8,10 +8,11 @@ const readFile = promisify(rawReadFile)
 
 export async function validateBuiltAssets(stackName, expectedNumberOfAssets) {
 	console.log(stackName)
-	let assets = JSON.parse(await readFile(`./cdk.out/${stackName}.assets.json`))
-	let zipAssets = Object.values(assets.files)
-		.filter(file => file.source.packaging === 'zip')
-		.map(file => file.source.path)
+	let template = JSON.parse(await readFile(`./cdk.out/${stackName}.template.json`))
+	let zipAssets = Object.values(template.Resources)
+		.filter(res => res && res.Type === 'AWS::Lambda::Function' && res.Properties?.Handler != 'framework.onEvent')
+		.map(res => res.Metadata?.['aws:asset:path'])
+		.filter(Boolean)
 	let handlers = zipAssets
 		.map(asset => `./cdk.out/${asset}/index.js`)
 		.map(target => path.resolve(process.cwd(), target))
