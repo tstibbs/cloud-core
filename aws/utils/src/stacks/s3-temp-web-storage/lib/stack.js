@@ -1,9 +1,8 @@
 import {fileURLToPath} from 'node:url'
 import {dirname, resolve} from 'node:path'
-import {readFile} from 'node:fs/promises'
-import {existsSync} from 'node:fs'
 
-import {Aws, Annotations, RemovalPolicy, Duration, Fn} from 'aws-cdk-lib'
+import {Aws, Annotations, RemovalPolicy, Duration, Fn, CustomResource} from 'aws-cdk-lib'
+import {Provider} from 'aws-cdk-lib/custom-resources'
 import {CfnAccount} from 'aws-cdk-lib/aws-apigateway'
 import {HttpLambdaIntegration} from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import {HttpApi, HttpMethod, CorsHttpMethod} from 'aws-cdk-lib/aws-apigatewayv2'
@@ -71,7 +70,7 @@ export class S3TempWebStorageResources {
 
 		const oac = new S3OriginAccessControl(stack, 'CloudFrontOAC', {})
 		const s3Origin = S3BucketOrigin.withOriginAccessControl(bucket, {originAccessControl: oac})
-		const {publicKeyPem, privateKeyPem} = keys
+		const {publicKeyPem, privateKeyPem} = this.#createKeyPair(stack)
 		const cloudFrontPrivateKeyParam = new StringParameter(stack, 'CloudFrontPrivateKeyParam', {
 			stringValue: privateKeyPem
 		})
@@ -126,7 +125,7 @@ export class S3TempWebStorageResources {
 		})
 	}
 
-	#buildGenericHandler(stack, name, entry, envs) {
+	#buildGenericHandler(stack, name, entry, envs = {}) {
 		const handler = new NodejsFunction(stack, name, {
 			entry: resolve(__dirname, `../src/${entry}.js`),
 			memorySize: 128,
@@ -137,25 +136,31 @@ export class S3TempWebStorageResources {
 		return handler
 	}
 
+	#createKeyPair(stack) {
+		const keyGeneratorFn = this.#buildGenericHandler(stack, 'KeyGeneratorFunction', 'generate-keys')
+		keyGeneratorFn.addToRolePolicy(
+			new PolicyStatement({
+				actions: ['ssm:PutParameter', 'ssm:GetParameter', 'ssm:DeleteParameter'],
+				resources: [`arn:aws:ssm:${Aws.REGION}:${Aws.ACCOUNT_ID}:parameter/cloud-core/*/keygen/*`]
+			})
+		)
+
+		const provider = new Provider(stack, 'KeyGenProvider', {
+			onEventHandler: keyGeneratorFn
+		})
+		const keyResource = new CustomResource(stack, 'KeyGenResource', {
+			serviceToken: provider.serviceToken
+		})
+
+		const publicKeyPem = keyResource.getAttString('publicKeyPem')
+		const privateKeyPem = keyResource.getAttString('privateKeyPem')
+		return {
+			publicKeyPem,
+			privateKeyPem
+		}
+	}
+
 	get httpApi() {
 		return this.#httpApi
-	}
-}
-
-export async function loadKeys() {
-	const dir = resolve(process.cwd(), 'cdk.out', 'keys')
-	const pubKeyPath = resolve(dir, 'cloudfront_public.pem')
-	const privKeyPath = resolve(dir, 'cloudfront_private.pem')
-	if (!existsSync(pubKeyPath) || !existsSync(privKeyPath)) {
-		throw new Error(
-			`CloudFront key files not found in ${dir}.\nGenerate them and place in ${dir}:\n\nopenssl genrsa -out ${privKeyPath} 2048\nopenssl rsa -pubout -in ${privKeyPath} -out ${pubKeyPath}\n\nThen re-run cdk synth/deploy.`
-		)
-	}
-	const publicKeyPem = await readFile(pubKeyPath, 'utf8')
-	const privateKeyPem = await readFile(privKeyPath, 'utf8')
-
-	return {
-		publicKeyPem,
-		privateKeyPem
 	}
 }
