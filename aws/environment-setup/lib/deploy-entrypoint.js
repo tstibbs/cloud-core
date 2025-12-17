@@ -8,28 +8,26 @@ import {SHARED_STACK_NAME} from '@tstibbs/cloud-core-utils/src/stacks/constants.
 
 const terminationProtection = !DEV_MODE //i.e. enable termination protection when deploying in prod mode
 
-const app = new App()
-
 export function buildParentAccountCoreStack() {
-	return new ParentAccountCoreStack(app, `ParentAccountCoreStack${DEV_SUFFIX}`, {
+	return new ParentAccountCoreStack(new App(), `ParentAccountCoreStack${DEV_SUFFIX}`, {
 		terminationProtection: terminationProtection
 	})
 }
 
 export function buildParentAccountInfraStack() {
-	return new ParentAccountInfraStack(app, `ParentAccountInfraStack${DEV_SUFFIX}`, {
+	return new ParentAccountInfraStack(new App(), `ParentAccountInfraStack${DEV_SUFFIX}`, {
 		terminationProtection: terminationProtection
 	})
 }
 
 export function buildAllAccountsStack() {
-	return new AllAccountsStack(app, `${SHARED_STACK_NAME}${DEV_SUFFIX}`, {
+	return new AllAccountsStack(new App(), `${SHARED_STACK_NAME}${DEV_SUFFIX}`, {
 		terminationProtection: terminationProtection
 	})
 }
 
 export function buildIotStack() {
-	return new IotStack(app, `IotStack${DEV_SUFFIX}`)
+	return new IotStack(new App(), `IotStack${DEV_SUFFIX}`)
 }
 
 export function buildAllStacks() {

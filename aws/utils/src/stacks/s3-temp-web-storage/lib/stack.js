@@ -28,8 +28,7 @@ export class S3TempWebStorageResources {
 		objectExpiry,
 		httpApiPrefix,
 		bucketPrefix,
-		getItemUrlsEndpoint,
-		keys
+		getItemUrlsEndpoint
 	) {
 		new CfnAccount(stack, 'agiGatewayAccount', {
 			//use a centrally created role so that it doesn't get deleted when this stack is torn down

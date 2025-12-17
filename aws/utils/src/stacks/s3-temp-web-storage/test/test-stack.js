@@ -31,7 +31,7 @@ class DeployStack extends Stack {
 	}
 }
 
-export async function buildStack() {
+export function buildStack() {
 	const app = new App()
 	return new DeployStack(app, stackName)
 }
