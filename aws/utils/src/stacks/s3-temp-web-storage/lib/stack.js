@@ -148,7 +148,10 @@ export class S3TempWebStorageResources {
 			onEventHandler: keyGeneratorFn
 		})
 		const keyResource = new CustomResource(stack, 'KeyGenResource', {
-			serviceToken: provider.serviceToken
+			serviceToken: provider.serviceToken,
+			properties: {
+				lambdaVersion: keyGeneratorFn.version //forces the lambda to be re-run whenever its code changes
+			}
 		})
 
 		const publicKeyPem = keyResource.getAttString('publicKeyPem')
