@@ -40,13 +40,17 @@ async function ensurePrivateKey() {
 	return cachedPrivateKey
 }
 
+function strictUriEncode(value) {
+	return encodeURIComponent(value).replace(/[%!'()*]/g, '')
+}
+
 export async function handler(event) {
 	let {body} = event
 	if (event.isBase64Encoded) {
 		body = Buffer.from(event.body, 'base64')
 	}
 	body = JSON.parse(body)
-	const fileName = body?.[endpointFileNameParam]
+	const fileName = strictUriEncode(body?.[endpointFileNameParam])
 	const prefixes = body?.[endpointPrefixesParam]
 	let errors = []
 	if (fileName == null || fileName.length == 0) {

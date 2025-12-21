@@ -22,7 +22,7 @@ async function run() {
 	try {
 		// lookup endpoint from CloudFormation stack outputs
 		const endpoint = `${await resolveEndpoint()}/${httpApiPrefix}/${endpointGetItemUrls}`
-		const fileName = 'test-file-name.txt'
+		const fileName = 'test-file(-)name here.txt'
 
 		// Request signed URLs
 		const postRes = await axios.post(endpoint, {fileName}, {headers: {'Content-Type': 'application/json'}})
