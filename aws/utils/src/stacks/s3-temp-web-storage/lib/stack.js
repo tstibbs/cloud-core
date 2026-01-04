@@ -15,6 +15,7 @@ import {S3BucketOrigin} from 'aws-cdk-lib/aws-cloudfront-origins'
 import {StringParameter} from 'aws-cdk-lib/aws-ssm'
 
 import {importLogsBucket, outputUsageStoreInfo, USAGE_TYPE_S3_ACCESS_LOGS} from '../../usage-tracking.js'
+import {allowLocalAssume} from '../../../tools/assume-locally.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -115,6 +116,7 @@ export class S3TempWebStorageResources {
 		)
 		bucket.grantReadWrite(handler)
 		cloudFrontPrivateKeyParam.grantRead(handler)
+		allowLocalAssume(handler)
 
 		let integration = new HttpLambdaIntegration(`get-item-urls-integration`, handler)
 		this.#httpApi.addRoutes({
