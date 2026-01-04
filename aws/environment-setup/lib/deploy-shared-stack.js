@@ -10,6 +10,7 @@ import {
 } from 'aws-cdk-lib/aws-iam'
 import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
 
+import {CLI_ROLE_EXPORT_NAME} from '@tstibbs/cloud-core-utils/src/stacks/constants.js'
 import {applyStandardTags} from '@tstibbs/cloud-core-utils'
 import {
 	apiGatewayCloudwatchRoleRef,
@@ -38,7 +39,7 @@ class AllAccountsStack extends Stack {
 function createCliRoles(stack) {
 	let developerPolicy = buildDeveloperPolicy(stack)
 	let cloudFormationInvokerPolicy = buildCloudFormationInvokerPolicy(stack)
-	new Role(stack, 'parentAccountCliRole', {
+	const parentCliRole = new Role(stack, 'parentAccountCliRole', {
 		roleName: PARENT_ACCNT_CLI_ROLE_NAME,
 		assumedBy: new CompositePrincipal(
 			new ServicePrincipal('cloudformation.amazonaws.com', {
@@ -49,6 +50,10 @@ function createCliRoles(stack) {
 			new ArnPrincipal(`arn:aws:iam::${PARENT_ACCOUNT_ID}:role/toolingFunctionsRole${DEV_SUFFIX}`)
 		),
 		managedPolicies: [developerPolicy, cloudFormationInvokerPolicy]
+	})
+	new CfnOutput(stack, 'parentCliRoleArn', {
+		value: parentCliRole.roleArn,
+		exportName: `${CLI_ROLE_EXPORT_NAME}${DEV_SUFFIX}`
 	})
 }
 
