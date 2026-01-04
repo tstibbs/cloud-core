@@ -1,6 +1,6 @@
 import {checkAllPoliciesForMultipleStacks} from '@tstibbs/cloud-core-utils'
-import {buildAllStacks} from '../lib/deploy-entrypoint.js'
+import {buildAllStacksForTests} from '../lib/deploy-entrypoint.js'
 
 describe('Stacks meet our policies', () => {
-	checkAllPoliciesForMultipleStacks(buildAllStacks())
+	checkAllPoliciesForMultipleStacks(buildAllStacksForTests())
 })

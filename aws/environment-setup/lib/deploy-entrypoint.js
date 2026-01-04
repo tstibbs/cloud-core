@@ -8,33 +8,44 @@ import {SHARED_STACK_NAME} from '@tstibbs/cloud-core-utils/src/stacks/constants.
 
 const terminationProtection = !DEV_MODE //i.e. enable termination protection when deploying in prod mode
 
-export function buildParentAccountCoreStack() {
-	return new ParentAccountCoreStack(new App(), `ParentAccountCoreStack${DEV_SUFFIX}`, {
+export function buildParentAccountCoreStack(app) {
+	return new ParentAccountCoreStack(app, `ParentAccountCoreStack${DEV_SUFFIX}`, {
 		terminationProtection: terminationProtection
 	})
 }
 
-export function buildParentAccountInfraStack() {
-	return new ParentAccountInfraStack(new App(), `ParentAccountInfraStack${DEV_SUFFIX}`, {
+export function buildParentAccountInfraStack(app) {
+	return new ParentAccountInfraStack(app, `ParentAccountInfraStack${DEV_SUFFIX}`, {
 		terminationProtection: terminationProtection
 	})
 }
 
-export function buildAllAccountsStack() {
-	return new AllAccountsStack(new App(), `${SHARED_STACK_NAME}${DEV_SUFFIX}`, {
+export function buildAllAccountsStack(app) {
+	console.log(`${SHARED_STACK_NAME}${DEV_SUFFIX}`)
+	return new AllAccountsStack(app, `${SHARED_STACK_NAME}${DEV_SUFFIX}`, {
 		terminationProtection: terminationProtection
 	})
 }
 
-export function buildIotStack() {
-	return new IotStack(new App(), `IotStack${DEV_SUFFIX}`)
+export function buildIotStack(app) {
+	return new IotStack(app, `IotStack${DEV_SUFFIX}`)
 }
 
-export function buildAllStacks() {
+export function buildAllStacksForCli() {
+	const app = new App()
 	return [
-		buildParentAccountCoreStack(), //
-		buildParentAccountInfraStack(), //
-		buildAllAccountsStack(), //
-		buildIotStack()
+		buildParentAccountCoreStack(app), //
+		buildParentAccountInfraStack(app), //
+		buildAllAccountsStack(app), //
+		buildIotStack(app)
+	]
+}
+
+export function buildAllStacksForTests() {
+	return [
+		buildParentAccountCoreStack(new App()), //
+		buildParentAccountInfraStack(new App()), //
+		buildAllAccountsStack(new App()), //
+		buildIotStack(new App())
 	]
 }

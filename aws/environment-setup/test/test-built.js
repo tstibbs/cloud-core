@@ -1,3 +1,5 @@
+import {App} from 'aws-cdk-lib'
+
 import {validateCdkAssets} from '@tstibbs/cloud-core-utils'
 import {
 	buildAllAccountsStack,
@@ -6,10 +8,12 @@ import {
 	buildIotStack
 } from '../lib/deploy-entrypoint.js'
 
-await validateCdkAssets(buildAllAccountsStack, 2) //s3 bucket emptier (shared across buckets) + emergency tear down function
+const buildStack = stack => () => stack(new App())
 
-await validateCdkAssets(buildParentAccountCoreStack, 0)
+await validateCdkAssets(buildStack(buildAllAccountsStack), 2) //s3 bucket emptier (shared across buckets) + emergency tear down function
 
-await validateCdkAssets(buildParentAccountInfraStack, 5) //s3 bucket emptier + cloudformation drift checker + login checker + iam permissions checker + usage monitor
+await validateCdkAssets(buildStack(buildParentAccountCoreStack), 0)
 
-await validateCdkAssets(buildIotStack, 1) //uptimeCheckerFunction
+await validateCdkAssets(buildStack(buildParentAccountInfraStack), 5) //s3 bucket emptier + cloudformation drift checker + login checker + iam permissions checker + usage monitor
+
+await validateCdkAssets(buildStack(buildIotStack), 1) //uptimeCheckerFunction
