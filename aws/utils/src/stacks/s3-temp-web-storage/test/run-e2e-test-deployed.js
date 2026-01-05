@@ -19,14 +19,18 @@ async function resolveEndpoint() {
 }
 
 async function run() {
-	try {
-		// lookup endpoint from CloudFormation stack outputs
-		const endpoint = `${await resolveEndpoint()}/${httpApiPrefix}/${endpointGetItemUrls}`
-		const fileName = 'test-file(-)name here.txt'
+	// lookup endpoint from CloudFormation stack outputs
+	const endpoint = `${await resolveEndpoint()}/${httpApiPrefix}/${endpointGetItemUrls}`
+	const fileName = 'test-file(-)name here.txt'
 
-		// Request signed URLs
-		const postRes = await axios.post(endpoint, {fileName}, {headers: {'Content-Type': 'application/json'}})
-		const result = postRes.data
+	// Request signed URLs
+	const postRes = await axios.post(endpoint, {fileName}, {headers: {'Content-Type': 'application/json'}})
+	const result = postRes.data
+	await roundtrip(result)
+}
+
+export async function roundtrip(result) {
+	try {
 		console.log(result)
 
 		if (!result || !result.putUrl || !result.getUrl) {
@@ -53,13 +57,12 @@ async function run() {
 
 		if (downloaded.equals(content)) {
 			console.log('SUCCESS: uploaded and downloaded binary content match (bytes:', content.length, ')')
-			process.exit(0)
+		} else {
+			console.error('FAIL: binary content mismatch')
+			console.error('uploaded length:', content.length)
+			console.error('downloaded length:', downloaded.length)
+			process.exit(2)
 		}
-
-		console.error('FAIL: binary content mismatch')
-		console.error('uploaded length:', content.length)
-		console.error('downloaded length:', downloaded.length)
-		process.exit(2)
 	} catch (err) {
 		if (err.request) {
 			err.method = err.request?.method
