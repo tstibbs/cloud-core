@@ -4,10 +4,11 @@ import yargs from 'yargs'
 import {hideBin} from 'yargs/helpers'
 
 import {watchDev} from './watchDev.js'
+import {doDiffploy} from './diffploy.js'
 
 const {CF_ROLE_ARN} = process.env
 
-function run(command) {
+export function run(command) {
 	return new Promise((resolve, reject) => {
 		let childProcess = spawn('bash', ['-c', command], {
 			stdio: 'inherit'
@@ -16,8 +17,12 @@ function run(command) {
 			if (code === 0) {
 				resolve(code)
 			} else {
-				reject(code)
+				reject(new Error(`Command failed with exit code ${code}`))
 			}
+		})
+
+		childProcess.on('error', err => {
+			reject(err)
 		})
 	})
 }
@@ -72,6 +77,12 @@ async function deploy(argv) {
 	await run(`cdk deploy ${args} ${stack}`)
 }
 
+export async function diffploy(argv) {
+	let otherArgs = parseAdditionalArgs(argv)
+	let args = specifyRoleArn(otherArgs)
+	await doDiffploy(args)
+}
+
 export function cli() {
 	yargs(hideBin(process.argv))
 		.command(
@@ -84,6 +95,7 @@ export function cli() {
 		.command('testcdk', 'Runs jest tests which can be used to test the actual cdk stack.', {}, testcdk)
 		.command('dryrun', 'Shows the diff (i.e. what would happen if a deployment was run).', {}, dryrun)
 		.command('deploy', '', {}, deploy)
+		.command('diffploy', '', {}, diffploy)
 		.demandCommand(1, 'Please choose a command.')
 		.version(false)
 		.wrap(null)
