@@ -145,7 +145,7 @@ async function executeAthenaQuery(athena, sql) {
 		maxDelay: 60 * 1000, // 1 minute
 		startingDelay: 2 * 1000, // 2 seconds
 		retry: e => {
-			if (e.message.endsWith('Final query state: FAILED')) {
+			if (e.message.endsWith('Final query state: FAILED') || e.AthenaErrorCode == 'RESULT_NOT_FOUND') {
 				console.error('aborting retry, query has already failed.')
 				return false
 			} else {

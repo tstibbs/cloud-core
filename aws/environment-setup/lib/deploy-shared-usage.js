@@ -10,6 +10,7 @@ import {LambdaFunction as LambdaFunctionTarget} from 'aws-cdk-lib/aws-events-tar
 import {createMultiAccountLambdaRole} from './deploy-utils.js'
 import {INFRA_ATHENA_WORKGROUP_NAME, USAGE_CHILD_ROLE_NAME, USAGE_PARENT_ROLE_NAME} from '../src/constants.js'
 import {PARENT_ACCOUNT_ID, RAW_CHILD_ACCOUNTS} from './deploy-envs.js'
+import {allowLocalAssume} from '@tstibbs/cloud-core-utils/src/tools/assume-locally.js'
 
 import {
 	RAW_USAGE_MONITOR_EVENT_AGE_DAYS,
@@ -58,6 +59,18 @@ export function createSharedUsageMonitorResources(stack) {
 		ManagedPolicy.fromAwsManagedPolicyName('AWSCloudFormationReadOnlyAccess')
 	) //need to query all stacks to get usage data source info
 	athenaResultsBucket.grantReadWrite(childAccountUsageMonitorRole)
+	athenaResultsBucket.addToResourcePolicy(
+		new PolicyStatement({
+			actions: ['s3:GetBucketLocation', 's3:GetObject', 's3:PutObject', 's3:ListBucket'],
+			resources: [athenaResultsBucket.bucketArn, athenaResultsBucket.arnForObjects('*')],
+			principals: [new ArnPrincipal(childAccountUsageMonitorRole.roleArn)],
+			conditions: {
+				StringEquals: {
+					'aws:CalledVia': ['athena.amazonaws.com']
+				}
+			}
+		})
+	)
 }
 
 export function createParentUsageMonitorResources(stack, notificationTopic) {
@@ -78,6 +91,7 @@ export function createParentUsageMonitorResources(stack, notificationTopic) {
 		timeout: Duration.minutes(5),
 		runtime: Runtime.NODEJS_22_X
 	})
+	allowLocalAssume(usageMonitorFunction)
 	notificationTopic.grantPublish(usageMonitorFunction)
 
 	new Rule(stack, 'uageMonitorSchedule', {
