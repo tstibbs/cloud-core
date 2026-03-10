@@ -1,17 +1,22 @@
-import {Tags, Aws, CfnResource} from 'aws-cdk-lib'
+import {Aws, CfnResource} from 'aws-cdk-lib'
 import {exec} from '../../utils.js'
 import {STACK_NAME_TAG_KEY, STACK_ID_TAG_KEY} from './constants.js'
 
 async function getRevision() {
-	let output = await exec('git rev-parse --verify HEAD')
-	return output.stdout.trim()
+	let revision = (await exec('git rev-parse --verify HEAD')).stdout.trim()
+	const changes = (await exec('git status -s')).stdout.trim()
+	if (changes.length > 0) {
+		revision += '+'
+	}
+	return revision
 }
 const REVISION = await getRevision()
 
-function tagAllLambdasWithRevision(stack) {
-	Tags.of(stack).add('revision', REVISION, {
-		includeResourceTypes: ['AWS::Lambda::Function']
-	})
+function tagStackWithRevision(stack) {
+	stack.templateOptions.metadata = {
+		...(stack.templateOptions.metadata || {}),
+		revision: REVISION
+	}
 }
 
 function tagResourceTree(scope, tagKey, tagValue) {
@@ -46,7 +51,7 @@ function tagResourceTree(scope, tagKey, tagValue) {
 }
 
 export function applyStandardTags(stack) {
-	tagAllLambdasWithRevision(stack)
+	tagStackWithRevision(stack)
 	tagResourceTree(stack, STACK_NAME_TAG_KEY, Aws.STACK_NAME)
 	tagResourceTree(stack, STACK_ID_TAG_KEY, Aws.STACK_ID)
 }
