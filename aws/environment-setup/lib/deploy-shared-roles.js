@@ -42,7 +42,6 @@ export function buildDeveloperPolicy(stack) {
 					'sns:*',
 					'sqs:*',
 					'ssm:*',
-					'textract:*',
 					//read only access to config, somewhat different to arn:aws:iam::aws:policy/AWSConfigUserAccess for reasons I don't necessarily understand
 					'config:BatchGet*',
 					'config:Describe*',
