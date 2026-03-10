@@ -58,9 +58,11 @@ async function checkOneStack(cloudformation, stackName) {
 	let statusResponse = await backOff.backOff(checkForCompletion, backoffParams)
 	let detectionStatus = statusResponse.DetectionStatus
 	let driftStatus = null
-	if (detectionStatus == detectionFailed) {
-		driftStatus = detectionFailed // if the detection failed we don't really care about the drift status
-	} else if (detectionStatus == detectionComplete) {
+	/* in theory if the detection fails we don't care about the resource results, however 
+	   certain resources (e.g. Alexa::ASK::Skill) cause the drift detection to fail constantly, 
+	   so we might as well look at the resources in that situation in case it shows up 
+	   something useful */
+	if (detectionStatus == detectionComplete || detectionStatus == detectionFailed) {
 		driftStatus = statusResponse.StackDriftStatus
 		if (
 			statusResponse.StackDriftStatus == driftStatusDrifted ||
