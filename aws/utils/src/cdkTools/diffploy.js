@@ -22,7 +22,7 @@ export async function doDiffploy(args) {
 	try {
 		console.log('🔎 Running CDK Diff...\n')
 
-		await run(`cdk diff --strict ${args}`)
+		await run(`cdk diff ${args}`)
 
 		const answer = await askQuestion('\nDo you want to deploy these changes? (y/n): ')
 
