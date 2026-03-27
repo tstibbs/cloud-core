@@ -1,7 +1,8 @@
-import {strict as assert} from 'assert'
+import {strict as assert} from 'node:assert'
 import {readFile, writeFile} from 'node:fs/promises'
-import {createRequire} from 'module'
-import path from 'path'
+import {existsSync} from 'node:fs'
+import {createRequire} from 'node:module'
+import path from 'node:path'
 
 import {CloudFormationStackArtifact} from 'aws-cdk-lib/cx-api'
 const require = createRequire(import.meta.url)
@@ -15,11 +16,19 @@ export async function validateBuiltAssets(buildStackFunction, expectedNumberOfAs
 		.filter(res => res && res.Type === 'AWS::Lambda::Function' && res.Properties?.Handler != 'framework.onEvent')
 		.map(res => res.Properties?.Code?.S3Key?.replace(/\.zip$/, ''))
 		.filter(Boolean)
-	let handlers = zipAssets
+	let cjsHandlers = zipAssets
 		.map(asset => `./cdk.out/asset.${asset}/index.js`)
 		.map(target => path.resolve(process.cwd(), target))
-	handlers = handlers.map(asset => require(asset)).map(handler => handler.handler)
-	assert.strictEqual(handlers.length, expectedNumberOfAssets)
+		.filter(existsSync)
+		.map(asset => require(asset))
+	let mjsHandlers = zipAssets
+		.map(asset => `./cdk.out/asset.${asset}/index.mjs`)
+		.map(target => path.resolve(process.cwd(), target))
+		.filter(existsSync)
+		.map(asset => import(asset))
+	mjsHandlers = await Promise.all(mjsHandlers)
+	const handlers = cjsHandlers.concat(mjsHandlers).map(handler => handler.handler)
+	assert.strictEqual(cjsHandlers.length + mjsHandlers.length, expectedNumberOfAssets)
 	// check each exposes a function, that's all we can do without proper unit tests
 	handlers.forEach(handler => assert.strictEqual(typeof handler, 'function'))
 	//return the handlers for optional further testing

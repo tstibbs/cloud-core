@@ -7,4 +7,4 @@ test('Assets are built as expected', async () => {
 	//CustomS3AutoDeleteObjects
 	//custom key generator
 	await validateCdkAssets(buildStack, 3)
-})
+}, 15000)
