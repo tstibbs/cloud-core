@@ -31,7 +31,7 @@ async function getLambdaConfig(functionName) {
 	}
 }
 
-export async function wrapWithAssumedRole(functionName, delegate) {
+export async function wrapWithAssumedRole(functionName, delegate, overrideVars = {}) {
 	// assume role
 	const oldEnv = {...process.env}
 	const {vars, roleArn} = await getLambdaConfig(functionName)
@@ -41,6 +41,9 @@ export async function wrapWithAssumedRole(functionName, delegate) {
 	process.env.AWS_SESSION_TOKEN = assumedCreds.SessionToken
 	delete process.env.AWS_PROFILE
 	Object.entries(vars).forEach(([key, value]) => {
+		process.env[key] = value
+	})
+	Object.entries(overrideVars).forEach(([key, value]) => {
 		process.env[key] = value
 	})
 	// run code
