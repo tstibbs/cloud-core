@@ -5,6 +5,7 @@ import {hideBin} from 'yargs/helpers'
 
 import {watchDev} from './watchDev.js'
 import {doDiffploy} from './diffploy.js'
+import {pkgExec} from './pkgManager.js'
 
 const {CF_ROLE_ARN} = process.env
 
@@ -61,7 +62,7 @@ export async function testsynth(argv) {
 async function testcdk(argv) {
 	let otherArgs = parseAdditionalArgs(argv)
 	const existingNodeOptions = process.env.NODE_OPTIONS ?? ''
-	await run(`NODE_OPTIONS="${existingNodeOptions} --experimental-vm-modules" npx jest ${otherArgs}`)
+	await run(`NODE_OPTIONS="${existingNodeOptions} --experimental-vm-modules" ${pkgExec} jest ${otherArgs}`)
 }
 
 async function dryrun(argv) {

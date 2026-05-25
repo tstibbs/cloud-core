@@ -3,12 +3,13 @@ import {fileURLToPath} from 'url'
 import {spawn} from 'child_process'
 
 import watcher from 'node-watch-changes'
+import {pkgManager} from './pkgManager.js'
 
 const watcherConfigFile = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'cdk.watcher-config.cjs')
 
 export async function watchDev(additionalNpmScript) {
 	if (additionalNpmScript) {
-		spawn('npm', ['run', additionalNpmScript], {
+		spawn(pkgManager, ['run', additionalNpmScript], {
 			stdio: 'inherit'
 		})
 	}
