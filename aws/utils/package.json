@@ -12,14 +12,16 @@
 		"cdk-tools": "./src/cdkTools/cli.js"
 	},
 	"dependencies": {
+		"@aws-sdk/client-lambda": "^3.962.0",
 		"@aws-sdk/client-s3": "^3.937.0",
 		"@aws-sdk/client-sns": "^3.939.0",
 		"@aws-sdk/client-ssm": "^3.939.0",
+		"@aws-sdk/client-sts": "^3.939.0",
 		"@aws-sdk/cloudfront-signer": "^3.939.0",
 		"@aws-sdk/lib-storage": "^3.937.0",
 		"@aws-sdk/s3-request-presigner": "^3.937.0",
 		"aws-cdk": "^2.1033.0",
-		"aws-cdk-lib": "^2.229.0",
+		"aws-cdk-lib": "2.249.0",
 		"dotenv": "^16.6.1",
 		"es-main": "^1.4.0",
 		"node-watch-changes": "^2.0.4",
@@ -29,8 +31,6 @@
 	},
 	"devDependencies": {
 		"@aws-sdk/client-cloudformation": "^3.939.0",
-		"@aws-sdk/client-lambda": "^3.962.0",
-		"@aws-sdk/client-sts": "^3.939.0",
 		"axios": "^1.13.2",
 		"esbuild": "^0.27.0",
 		"jest": "^30.2.0"
