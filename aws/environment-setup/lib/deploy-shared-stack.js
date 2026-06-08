@@ -1,4 +1,4 @@
-import {Stack, CfnOutput, RemovalPolicy} from 'aws-cdk-lib'
+import {Stack, CfnOutput, RemovalPolicy, CfnMapping, Aws} from 'aws-cdk-lib'
 import {
 	Role,
 	CompositePrincipal,
@@ -9,6 +9,7 @@ import {
 	Effect
 } from 'aws-cdk-lib/aws-iam'
 import {Bucket, BucketEncryption} from 'aws-cdk-lib/aws-s3'
+import {CfnAccountCustomization} from 'aws-cdk-lib/aws-uxc'
 
 import {CLI_ROLE_EXPORT_NAME} from '@tstibbs/cloud-core-utils/src/stacks/constants.js'
 import {applyStandardTags} from '@tstibbs/cloud-core-utils'
@@ -20,7 +21,7 @@ import {
 import {buildDeveloperPolicy, buildCloudFormationInvokerPolicy, buildScoutSuitePolicy} from './deploy-shared-roles.js'
 import {createEmergencyInfra} from './deploy-shared-infra.js'
 import {createSharedUsageMonitorResources} from './deploy-shared-usage.js'
-import {PARENT_ACCOUNT_ID, DEV_SUFFIX} from './deploy-envs.js'
+import {PARENT_ACCOUNT_ID, DEV_SUFFIX, ACCOUNT_MAPPINGS} from './deploy-envs.js'
 import {PARENT_ACCNT_CLI_ROLE_NAME, buildNotificationChannels} from './deploy-utils.js'
 
 class AllAccountsStack extends Stack {
@@ -32,8 +33,18 @@ class AllAccountsStack extends Stack {
 		createEmergencyInfra(this, notificationTopic)
 		createApplicationDependencies(this)
 		createSharedUsageMonitorResources(this)
+		createAccountCustomization(this)
 		applyStandardTags(this)
 	}
+}
+
+function createAccountCustomization(stack) {
+	const colourMapping = new CfnMapping(stack, 'UiConfigMapping', {
+		mapping: ACCOUNT_MAPPINGS
+	})
+	new CfnAccountCustomization(stack, 'AccountCustomization', {
+		accountColor: colourMapping.findInMap(Aws.ACCOUNT_ID, 'accountColour')
+	})
 }
 
 function createCliRoles(stack) {

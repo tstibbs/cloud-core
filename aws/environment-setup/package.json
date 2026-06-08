@@ -27,8 +27,8 @@
 	},
 	"devDependencies": {
 		"@tstibbs/cloud-core-utils": "file:../utils",
-		"aws-cdk": "^2.1033.0",
-		"aws-cdk-lib": "^2.229.0",
+		"aws-cdk": "^2.1126.0",
+		"aws-cdk-lib": "^2.258.0",
 		"esbuild": "^0.27.0",
 		"jest": "^30.2.0"
 	},
