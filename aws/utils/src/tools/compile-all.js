@@ -9,7 +9,7 @@ export async function importAll(meta, dirPath) {
 	dirPath = join(meta.dirname, dirPath)
 	console.log(`Checking ${dirPath}`)
 	const oldExitCode = process.exitCode //cache exit code in case one of the files we load sets an exit code
-	const files = await listFiles(dirPath)
+	const files = (await listFiles(dirPath)).filter(file => file.trim().length > 0)
 	const failures = []
 	for (let file of files) {
 		console.log(file)
