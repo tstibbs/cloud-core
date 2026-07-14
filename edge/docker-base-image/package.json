@@ -1,0 +1,20 @@
+{
+	"name": "@tstibbs/cloud-core-base-image",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=20",
+		"npm": ">=10"
+	},
+	"bin": {
+		"cloud-core-base-image": "./bin/cli.js"
+	},
+	"dependencies": {
+		"commander": "^15.0.0"
+	},
+	"scripts": {
+		"test": "node bin/cli.js --help",
+		"docker:build": "docker build -t docker-base-image:test src",
+		"docker:test": "docker run docker-base-image:test bash -c 'echo test ran successfully'"
+	}
+}

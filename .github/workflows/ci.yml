@@ -39,6 +39,19 @@ jobs:
 
     # edge code
 
+    - name: "docker-base-image: npm ci"
+      run: npm ci
+      working-directory: edge/docker-base-image
+    - name: "docker-base-image: test cli"
+      run: npm run test
+      working-directory: edge/docker-base-image
+    - name: "docker-base-image: build image"
+      run: npm run docker:build
+      working-directory: edge/docker-base-image
+    - name: "docker-base-image: test image"
+      run: npm run docker:test
+      working-directory: edge/docker-base-image
+
     - run: npm ci
       working-directory: edge/iot
     - run: npm run test
