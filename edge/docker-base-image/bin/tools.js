@@ -9,9 +9,13 @@ const PROJECT_NAME = '@tstibbs/cloud-core-base-image'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const libraryDir = join(__dirname, '..')
 
+function getProjectRepoRoot() {
+	return getCommandOutput(`git rev-parse --show-toplevel`)
+}
+
 function getProjectCommitHash() {
-	let commit = execSync(`git rev-parse HEAD`, {encoding: 'utf-8'}).trim()
-	const changes = execSync(`git status -s`, {encoding: 'utf-8'}).trim()
+	let commit = getCommandOutput(`git rev-parse HEAD`)
+	const changes = getCommandOutput(`git status -s`)
 	if (changes.length > 0) {
 		commit += '_wip'
 	}
@@ -19,7 +23,7 @@ function getProjectCommitHash() {
 }
 
 function loadProjectDetails() {
-	const pnpmOut = execSync(`pnpm ls ${PROJECT_NAME} --json`, {encoding: 'utf-8'})
+	const pnpmOut = getCommandOutput(`pnpm ls ${PROJECT_NAME} --json`)
 	return JSON.parse(pnpmOut)[0]
 }
 
@@ -50,41 +54,51 @@ function getContainerName() {
 	return projectName.match(/^@[^\/]+\/(.+)$/)?.[1] || projectName
 }
 
-function run(command, workingDir) {
-	const buildCmd = command
-	console.log(buildCmd)
+function getCommandOutput(command) {
+	console.log(command)
+	const output = execSync(command, {encoding: 'utf-8'}).trim()
+	console.log(`=> ${output}`)
+	return output
+}
+
+function runCommand(command, workingDir) {
+	console.log(command)
 	const opts = {stdio: 'inherit'}
 	if (workingDir) {
 		opts.cwd = workingDir
 	}
-	execSync(buildCmd, opts)
+	execSync(command, opts)
 }
 
-function buildImages() {
+function getContainerTag() {
+	return `${getContainerName()}:latest`
+}
+
+function buildImages(dockerfileDir) {
 	const cloudCoreCommitHash = getCloudCoreCommitHash()
 	const thisProjectCommitHash = getProjectCommitHash()
-	const containerTag = `${getContainerName()}:latest`
 
 	console.log(`📦 Building base image...`)
 	const buildCmd = `docker build -t cloud-core-base-image:build .`
-	run(buildCmd, `${libraryDir}/src`)
+	runCommand(buildCmd, `${libraryDir}/src`)
 
 	console.log(`🏗️  Building application image...`)
 	const buildAppCmd = [
 		`docker build`,
 		`--label org.opencontainers.image.base.revision=${cloudCoreCommitHash}`,
 		`--label org.opencontainers.image.revision=${thisProjectCommitHash}`,
-		`-t ${containerTag}`,
-		`.`
+		`--tag ${getContainerTag()}`,
+		`--build-context project-root=${getProjectRepoRoot()}`,
+		dockerfileDir
 	].join(' ')
-	run(buildAppCmd)
-	return containerTag
+	runCommand(buildAppCmd)
 }
 
-function deployImage(tag, server) {
+function deployImage(server) {
+	const tag = getContainerTag()
 	console.log(`🚚 Streaming ${tag} to ${server}...`)
 	const streamCmd = `docker save ${tag} | gzip | ssh ${server} "gunzip | docker load"`
-	run(streamCmd)
+	runCommand(streamCmd)
 	console.log('✅ App image loaded on target host.')
 }
 
@@ -92,15 +106,18 @@ const program = new Command()
 
 program.name('cloud-core-base-image-cli').description('Helper CLI to manage pnpm-versioned base Docker images')
 
-program.command('build').description('Build the docker image, and if the base image if necessary').action(buildImages)
+program
+	.command('build')
+	.option('--dockerfileDir <path>', 'Relative path to Dockerfile directory', '.')
+	.description('Build the docker image, and if the base image if necessary')
+	.action(options => buildImages(options.dockerfileDir))
 
 program
 	.command('deploy')
 	.description('Build the image and stream it to a remote server over SSH')
 	.requiredOption('-s, --server <ssh-target>', 'Target server string (e.g., user@homeserver)')
 	.action(options => {
-		const containerTag = buildImages()
-		deployImage(containerTag, options.server)
+		deployImage(options.server)
 	})
 
 export function cli() {
