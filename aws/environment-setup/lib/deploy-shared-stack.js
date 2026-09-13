@@ -43,7 +43,8 @@ function createAccountCustomization(stack) {
 		mapping: ACCOUNT_MAPPINGS
 	})
 	new CfnAccountCustomization(stack, 'AccountCustomization', {
-		accountColor: colourMapping.findInMap(Aws.ACCOUNT_ID, 'accountColour')
+		accountColor: colourMapping.findInMap(Aws.ACCOUNT_ID, 'accountColour'),
+		visibleRegions: ['eu-west-2', 'us-east-1']
 	})
 }
 
