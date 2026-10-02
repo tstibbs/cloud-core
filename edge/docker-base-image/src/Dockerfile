@@ -1,5 +1,7 @@
 FROM debian:bookworm-slim
 
+ENV MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS='node,pnpm'
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates libatomic1 && \
     rm -rf /var/lib/apt/lists/*
