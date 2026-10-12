@@ -37,13 +37,24 @@ function isMissingTags(drift) {
 	return drift.PropertyDifferences.every(diff => diff.PropertyPath == '/Tags' && diff.ActualValue == 'null')
 }
 
+function isApiAccessLogs(drift) {
+	// the arn for a log group weirdly includes a star, but APIG strips this
+	return (
+		drift.ResourceType == 'AWS::ApiGateway::Stage' &&
+		drift.PropertyDifferences.every(
+			diff => diff.PropertyPath == '/AccessLogSetting/DestinationArn' && diff.ExpectedValue == `${diff.ActualValue}:*`
+		)
+	)
+}
+
 export function diffsAreAcceptable(drifts) {
 	let unacceptable = drifts.filter(
 		drift =>
 			!isMissingTags(drift) &&
 			!isApiGatewayNullBody(drift) &&
 			!isScheduleRetryPolicy(drift) &&
-			!isApiGatewayNullProps(drift)
+			!isApiGatewayNullProps(drift) &&
+			!isApiAccessLogs(drift)
 	)
 	unacceptable.forEach(drift => console.log(drift))
 	return unacceptable.length == 0
