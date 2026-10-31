@@ -2,9 +2,17 @@
 	"name": "@tstibbs/cloud-core-edge-utils",
 	"version": "0.0.1",
 	"private": true,
-	"engines": {
-		"node": ">=20",
-		"npm": ">=10"
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": "22",
+			"onFail": "error"
+		},
+		"packageManager": {
+			"name": "pnpm",
+			"version": "12",
+			"onFail": "error"
+		}
 	},
 	"type": "module",
 	"files": [

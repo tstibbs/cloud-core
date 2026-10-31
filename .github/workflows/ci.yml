@@ -4,19 +4,19 @@ on: [push, pull_request]
 
 env:
   npm_config_engine_strict: true
+  MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS: "node,pnpm"
 
 jobs:
   build:
 
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
+    - name: Setup mise
+      uses: jdx/mise-action@v5
 
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 22.x
     - name: Set up environment
       run: mkdir cdk.tmp
       working-directory: aws/environment-setup
@@ -24,40 +24,54 @@ jobs:
       run: cp dummy.env .env
       working-directory: aws/environment-setup
 
-    - run: npm ci
+    - name: aws/utils ci
+      run: pnpm ci
       working-directory: aws/utils
-    - run: npm run test
+    - name: aws/utils test
+      run: pnpm run test
       working-directory: aws/utils
 
-    - run: npm ci
+    - name: aws/env-setup ci
+      run: pnpm ci
       working-directory: aws/environment-setup
-    - run: npm run testsynth
+    - name: aws/env-setup testsynth
+      run: pnpm run testsynth
       working-directory: aws/environment-setup
-    - run: npm run test
+    - name: aws/env-setup test
+      run: pnpm run test
       working-directory: aws/environment-setup
     # don't run the actual deploy in the CI, but run everything up to here to get the best idea of whether it works
 
     # edge code
 
-    - name: "docker-base-image: npm ci"
-      run: npm ci
+    - name: "docker-base-image: pnpm ci"
+      run: pnpm ci
       working-directory: edge/docker-base-image
     - name: "docker-base-image: test cli"
-      run: npm run test
+      run: pnpm run test
       working-directory: edge/docker-base-image
     - name: "docker-base-image: build image"
-      run: npm run docker:build
+      run: pnpm run docker:build
       working-directory: edge/docker-base-image
     - name: "docker-base-image: test image"
-      run: npm run docker:test
+      run: pnpm run docker:test
       working-directory: edge/docker-base-image
 
-    - run: npm ci
+    - name: edge/iot ci
+      run: pnpm ci
       working-directory: edge/iot
-    - run: npm run test
+    - name: edge/iot test
+      run: pnpm run test
       working-directory: edge/iot
     - name: Set up environment for docker build
-      run: mkdir example-container/app && cp -r *.js* node_modules example-container/app/
+      run: mkdir example-container/app && cp -r *.js* pnpm-*.yaml node_modules example-container/app/
       working-directory: edge/iot
-    - run: docker compose build
+    - name:  edge/iot/example-container build
+      run: docker compose build
       working-directory: edge/iot/example-container
+
+    # ui code
+
+    - name: ui ci
+      run: pnpm ci
+      working-directory: ui
