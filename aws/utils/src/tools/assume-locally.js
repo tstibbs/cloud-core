@@ -43,6 +43,14 @@ export async function wrapWithAssumedRole(functionName, delegate, overrideVars =
 	Object.entries(vars).forEach(([key, value]) => {
 		process.env[key] = value
 	})
+	//first override envs based on what was passed to the command
+	Object.entries(process.env)
+		.filter(([key]) => key.startsWith('OVERRIDE_'))
+		.forEach(([overrideKey, value]) => {
+			const key = overrideKey.slice('OVERRIDE_'.length)
+			process.env[key] = value
+		})
+	//second override based on what was passed in code (i.e. code takes precedence)
 	Object.entries(overrideVars).forEach(([key, value]) => {
 		process.env[key] = value
 	})
