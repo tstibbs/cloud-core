@@ -52,6 +52,7 @@ async function queryCloudfront(apis, accountId, dates, stackName, resource) {
 		let result = mapsToArray(Data)
 		let [count, status, date, sourceIp, method, geoBlocked, uriRoot] = result
 		let event = `${method} ${status}`
+		let success = status.startsWith('2')
 		let values = {
 			accountId,
 			stackName,
@@ -60,7 +61,8 @@ async function queryCloudfront(apis, accountId, dates, stackName, resource) {
 			count,
 			event,
 			sourceIp,
-			geoBlocked
+			geoBlocked,
+			success
 		}
 		if (resource.splitReportingByUrlRoot) {
 			values.uriRoot = uriRoot
@@ -219,13 +221,16 @@ function formatResultsForEmail(allResults, ipInfo) {
 		.map(stackDisplay => {
 			let stackResults = allResults.filter(result => stackDisplay == createTitle(result))
 			let ipsToCount = stackResults.reduce((ipsToCount, stackResult) => {
-				let {count, sourceIp, geoBlocked} = stackResult
+				let {count, sourceIp, geoBlocked, success} = stackResult
 				let ipDescriptor = sourceIp
 				if (sourceIp in ipInfo) {
 					let {shortDescription, risk} = ipInfo[sourceIp]
 					risk = `${risk} risk`
 					if (geoBlocked) {
 						risk = `${risk} (${geoBlocked})`
+					}
+					if (!success) {
+						risk = `${risk} (failed)`
 					}
 					let descriptionRegex = /^([^\(]+\()AS\d+ (.+\))$/
 					let regexMatch = shortDescription.match(descriptionRegex)
